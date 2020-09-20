@@ -1,0 +1,46 @@
+<RCC>
+    <qresource prefix="/images">
+        <file>arduino_button.png</file>
+        <file>down.png</file>
+        <file>empty_button.png</file>
+        <file>home_button.png</file>
+        <file>manual_mode_button.png</file>
+        <file>message_button.png</file>
+        <file>off_button.png</file>
+        <file>reset_button_down.png</file>
+        <file>reset_button.png</file>
+        <file>settings_button.png</file>
+        <file>small_button_disabled.png</file>
+        <file>small_button.png</file>
+        <file>status_button.png</file>
+        <file>status_error.png</file>
+        <file>status_ok.png</file>
+        <file>title_bar.png</file>
+        <file>up.png</file>
+        <file>breathing_rate_button.png</file>
+        <file>analysis_button.png</file>
+        <file>import_button.png</file>
+        <file>mass_button.png</file>
+        <file>rotation_angle_button.png</file>
+        <file>total_time_button.png</file>
+        <file>play_button.png</file>
+        <file>stop_button.png</file>
+        <file>import_button_down.png</file>
+        <file>rotation_angle_button_down.png</file>
+        <file>level_button.png</file>
+        <file>trend_correction_button.png</file>
+        <file>minimal_time_frame_button.png</file>
+        <file>peak_correction_button.png</file>
+        <file>harmonics_button.png</file>
+        <file>save_button.png</file>
+        <file>load_button.png</file>
+        <file>emergency_button.png</file>
+        <file>logo.png</file>
+        <file>mirror_horizontal_button_do.png</file>
+        <file>mirror_horizontal_button.png</file>
+        <file>mirror_vertical_button_down.png</file>
+        <file>mirror_vertical_button.png</file>
+        <file>hide_show_contol_points_but.png</file>
+        <file>hide_show_contol_points_dow.png</file>
+    </qresource>
+</RCC>

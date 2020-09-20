@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>xfMSGDlg</class>
+ <widget class="QDialog" name="xfMSGDlg">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>625</width>
+    <height>188</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QDialog
+{
+	background-color: qlineargradient(spread:pad, x1:0.191, y1:0.181818, x2:1, y2:0.722, stop:0 rgba(252, 252, 252, 255), stop:1 rgba(165, 165, 165, 255));
+	border-color: rgb(0, 0, 0);
+	margin: 5px 5px;
+	border-style: inset;
+	border-radius: 8px;
+	border-width: 3px;
+}</string>
+  </property>
+  <widget class="QLabel" name="pTXTLab">
+   <property name="geometry">
+    <rect>
+     <x>16</x>
+     <y>18</y>
+     <width>587</width>
+     <height>78</height>
+    </rect>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>100</width>
+     <height>0</height>
+    </size>
+   </property>
+   <property name="font">
+    <font>
+     <family>Roboto Condensed</family>
+     <pointsize>16</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>MSG1
+MSG2
+MSG3</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
+   </property>
+   <property name="margin">
+    <number>5</number>
+   </property>
+  </widget>
+  <widget class="QWidget" name="layoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>329</x>
+     <y>96</y>
+     <width>282</width>
+     <height>77</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_6">
+    <item>
+     <widget class="QLabel" name="label_21">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>75</width>
+        <height>75</height>
+       </size>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="pixmap">
+       <pixmap resource="xf_resources.qrc">:/images/emergency_button.png</pixmap>
+      </property>
+      <property name="scaledContents">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QToolButton" name="pCancelTB">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>196</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="styleSheet">
+       <string notr="true"> QToolButton{
+     background-color: qlineargradient(spread:pad, x1:0.191, y1:0.181818, x2:1, y2:0.722, stop:0 rgba(252, 252, 252, 255), stop:1 rgba(165, 165, 165, 255));
+     border-width: 3px;
+     border-style: outset;
+     border-radius: 15px;
+     border-color: #777;
+	 color: #000;
+     font: bold 16px;
+     min-width: 10em;
+     padding: 0px;
+ }
+ QToolButton:pressed {
+     background-color: #555;
+     border-width: 3px;
+     border-style: inset;
+     border-radius: 15px;
+     border-color: #777;
+     font: bold 16px;
+ 	 color: #fff;
+    min-width: 10em;
+     padding: 0px;
+ } 
+ QToolButton:checked {
+     background-color: #555;
+     border-width: 3px;
+     border-style: inset;
+     border-radius: 15px;
+     border-color: #777;
+     font: bold 16px;
+ 	 color: #fff;
+    min-width: 10em;
+     padding: 0px;
+ } 
+</string>
+      </property>
+      <property name="text">
+       <string>close</string>
+      </property>
+      <property name="iconSize">
+       <size>
+        <width>280</width>
+        <height>100</height>
+       </size>
+      </property>
+      <property name="checkable">
+       <bool>false</bool>
+      </property>
+      <property name="autoExclusive">
+       <bool>false</bool>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources>
+  <include location="xf_resources.qrc"/>
+ </resources>
+ <connections>
+  <connection>
+   <sender>pCancelTB</sender>
+   <signal>clicked()</signal>
+   <receiver>xfMSGDlg</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>480</x>
+     <y>139</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>233</x>
+     <y>121</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
