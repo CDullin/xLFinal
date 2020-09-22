@@ -105,6 +105,11 @@ protected slots:
     void hideShowControlButton();
     void dispFrame();
 
+    void defaultSettings();
+    void saveSettings();
+    void restoreSettings();
+    void LCDModified(int);
+
 signals:
     void MSG(const QString& txt,const bool& error=false);
 
@@ -116,6 +121,7 @@ private:
     XLFLungLobeVisualization _leftLobeVis,_rightLobeVis;
     bool _controlPointsVisible=false;
     xfPixmapItem *pPixItem = nullptr;
+    QGraphicsPixmapItem *pExplanationPixItem=nullptr;
     QGraphicsRectItem *p3DFrameItem = nullptr;
     xf3DFrameCornerItem* pCornerPixmapItem=nullptr;
     QGraphicsSimpleTextItem* pResultTxtItem = nullptr;

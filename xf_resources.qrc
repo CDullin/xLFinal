@@ -42,5 +42,8 @@
         <file>mirror_vertical_button.png</file>
         <file>hide_show_contol_points_but.png</file>
         <file>hide_show_contol_points_dow.png</file>
+        <file>harmonics_explanation.png</file>
+        <file>level_explanation.png</file>
+        <file>detrending_explanation.png</file>
     </qresource>
 </RCC>

@@ -142,7 +142,7 @@ QVector <float> adaptiveMovAvFilter(QVector <float> values, float halfFrameWidth
 }
 
 
-void findMaxPositions(QVector<float> values, QVector<int> &_peaks,int minFrame,int maxFrame, float lvl, int minIntervalFrames)
+void findMaxPositions(QVector<float> values, QVector<int> &_peaks,int minFrame,int maxFrame, float lvl)
 {
     if (values.length()>2)
     {
@@ -169,20 +169,17 @@ void findMaxPositions(QVector<float> values, QVector<int> &_peaks,int minFrame,i
             if (_startPntFound) _region.append(i);
             if (values.at(i)>_lvl && values.at(i+1)<_lvl && _startPntFound)
             {
-                if (_region.count()>=minIntervalFrames)
-                {
-                    // endpoint found
-                    float _maxBrightnessInRegion=0.0f;
-                    int _maxBrightnessPos=-1;
-                    for (int j=0;j<_region.length();++j)
-                        if (values.at(_region.at(j))>_maxBrightnessInRegion)
-                        {
-                            _maxBrightnessPos=_region.at(j);
-                            _maxBrightnessInRegion=values.at(_region.at(j));
-                        }
-                    if (_maxBrightnessPos!=-1)
-                        _peaks.append(_maxBrightnessPos);
-                }
+                // endpoint found
+                float _maxBrightnessInRegion=0.0f;
+                int _maxBrightnessPos=-1;
+                for (int j=0;j<_region.length();++j)
+                    if (values.at(_region.at(j))>_maxBrightnessInRegion)
+                    {
+                        _maxBrightnessPos=_region.at(j);
+                        _maxBrightnessInRegion=values.at(_region.at(j));
+                    }
+                if (_maxBrightnessPos!=-1)
+                    _peaks.append(_maxBrightnessPos);
                 _startPntFound=false;
             }
         }
@@ -250,7 +247,7 @@ void getIntervals(QVector<float> values, QVector<int> &peaks, QVector<int> &inte
     }
 }
 
-XLFParam generateParam(QVector <float> values,int minFrame,int maxFrame,float fps,float lvl, int _width,float _intervalFilter)
+XLFParam generateParam(QVector <float> values,int minFrame,int maxFrame,float fps,float lvl, float _intervalFilter)
 {
 /*
     float fps = (float)(_data._frames)/(*_data.pTotalTime);
@@ -259,7 +256,7 @@ XLFParam generateParam(QVector <float> values,int minFrame,int maxFrame,float fp
 */
     XLFParam param;
     param._valid = true;
-    findMaxPositions(values,param._peaks,minFrame,maxFrame,lvl,_width);
+    findMaxPositions(values,param._peaks,minFrame,maxFrame,lvl);
 
     if (param._peaks.count()<3)
     {

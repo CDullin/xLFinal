@@ -28,20 +28,14 @@ void xfDlg::calculate3DXLF()
     float count = 0;
     QVector <float> _avBoth;
 
-    QRectF rec=p3DFrameItem->rect();
-    QPointF p1=rec.topLeft();
-    QPointF p2=rec.bottomRight();
-    p1=p3DFrameItem->mapToParent(p1);
-    p2=p3DFrameItem->mapToParent(p2);
-    rec=QRectF(p1,p2);
+    QRectF rec=pPixItem->mapRectFromItem(p3DFrameItem,p3DFrameItem->rect());
 
     // maybe update
-    int _minFrame = 0;
-    int _maxFrame = _data._frames-1;
+    int _minFrame = _data._startFrame;
+    int _maxFrame = _data._endFrame;
 
     QLineSeries *_oData = new QLineSeries();
     QLineSeries *_oData2 = new QLineSeries();
-    QLineSeries *_linearData = new QLineSeries();
     float fps = (float)_data._frames / (*_data.pTotalTime);
 
     float _maxValue = 0;
@@ -77,6 +71,11 @@ void xfDlg::calculate3DXLF()
     TIFFGetField(tif,TIFFTAG_XRESOLUTION,&pixInX);
     TIFFGetField(tif,TIFFTAG_RESOLUTIONUNIT,&resUnit);
 
+    long swx = min(rec.left(),rec.right());
+    long ewx = max(rec.left(),rec.right())+1;
+    long swy = min(rec.bottom(),rec.top());
+    long ewy = max(rec.bottom(),rec.top())+1;
+
     quint16* pBuffer=(uint16*)_TIFFmalloc(imageWidth*imageLength*sizeof(uint16));
 
     for (long t=0;t<_data._frames && !_abb ;++t)
@@ -97,8 +96,8 @@ void xfDlg::calculate3DXLF()
         }
         _TIFFfree(buf);
 
-        for (long x=rec.left();x<rec.right();++x)
-            for (long y=rec.top();y<rec.bottom();++y)
+        for (long x=swx;x<ewx;++x)
+            for (long y=swy;y<ewy;++y)
             {
                 count++;
                 sumBuffer+=pBuffer[x+y*imageWidth];
@@ -128,9 +127,10 @@ void xfDlg::calculate3DXLF()
 
     // forward projection
     complex_1d_array x;
-    complex_1d_array fx;
+    complex_1d_array y;
     xparams param;
     x.setlength(_avBoth.count());
+    y.setlength(_avBoth.count());
 
     for (int i=0;i<_avBoth.count();++i)
     {
@@ -156,6 +156,14 @@ void xfDlg::calculate3DXLF()
         _data._heartRateInBPM = maxPos/fps*60;       // in bpm
     }
 
+    // to check the harmonics
+    for (int i=0;i<_avBoth.count();++i)
+        if (i<(*_data.pHarmonics) || (i>_avBoth.count()-1-(*_data.pHarmonics)))
+            y[i]=x[i];
+        else
+        {
+            y[i].x=0;y[i].y=0;
+        }
 
     //manipulate fourier space
     for (int i=(*_data.pHarmonics);i<_avBoth.count()-(*_data.pHarmonics);++i)
@@ -168,6 +176,8 @@ void xfDlg::calculate3DXLF()
 
     // inverse projection
     fftc1dinv(x,_avBoth.count(),param);
+    fftc1dinv(y,_avBoth.count(),param);
+
 
     double _maxBackProj=0;
     double _minBackProj=10000;
@@ -175,6 +185,8 @@ void xfDlg::calculate3DXLF()
     {
         _maxBackProj = std::max(_maxBackProj,_avBoth.at(i)-abscomplex(x[i]));
         _minBackProj = std::min(_minBackProj,_avBoth.at(i)-abscomplex(x[i]));
+        //_maxBackProj = std::max(_maxBackProj,abscomplex(x[i]));
+        //_minBackProj = std::min(_minBackProj,abscomplex(x[i]));
     }
 
 
@@ -185,20 +197,15 @@ void xfDlg::calculate3DXLF()
         _oData->append(_data._angles[t],_avBoth.at(t)/_maxValue);
 
         val = ((_avBoth.at(t)-abscomplex(x[t]))-_minBackProj)/(_maxBackProj-_minBackProj);
+        //val = (abscomplex(x[t])-_minBackProj)/(_maxBackProj-_minBackProj);
 
         _minusBackground << val;
         _oData2->append(_data._angles[t],val);
-        _linearData->append(_data._angles[t],val);
-        //_linearData->append(_data._angles.at(t),_ratio.at(min(t,(long)_ratio.count()-1)));
     }
 
     // 20-340°
-    _minFrame = (float)_size / 360.0 * 45.0;
-    _maxFrame = (float)_size / 360.0 * 315.0;
     QVector <int> _bPeaks;
-
-    int minIntervalFrames = fps * (*_data.pMinIntervalLengthInMS) / 1000.0f;
-    findMaxPositions(_minusBackground,_bPeaks,_minFrame,_maxFrame,(*_data.pLevelInPercent),minIntervalFrames);
+    findMaxPositions(_minusBackground,_bPeaks,_minFrame,_maxFrame,(*_data.pLevelInPercent));
 
     QVector<QVector<float>> _intervals;
    // find left and right positions
@@ -257,23 +264,10 @@ void xfDlg::calculate3DXLF()
     pIntervals->setPen(QPen(Qt::black));
     pIntervals->setBrush(QBrush(Qt::blue));
     pIntervals->setMarkerSize(5);
-    QScatterSeries *pLIntervals = new QScatterSeries();
-    pLIntervals->setName("intervals");
-    pLIntervals->setPen(QPen(Qt::black));
-    pLIntervals->setBrush(QBrush(Qt::blue));
-    pLIntervals->setMarkerSize(5);
     for (int i=0;i<_intervals.count();++i)
     {
-/*
-        pIntervals->append(_intervals.at(i)[0],_level);
-        pIntervals->append(_intervals.at(i)[1],_level);
-        pLIntervals->append(_intervals.at(i)[0],_level);
-        pLIntervals->append(_intervals.at(i)[1],_level);
-*/
         pIntervals->append(_intervals.at(i)[0],_minusBackground[_intervals.at(i)[3]]);
         pIntervals->append(_intervals.at(i)[1],_minusBackground[_intervals.at(i)[4]]);
-        pLIntervals->append(_intervals.at(i)[0],_minusBackground[_intervals.at(i)[3]]);
-        pLIntervals->append(_intervals.at(i)[1],_minusBackground[_intervals.at(i)[4]]);
     }
     //_data._both = generateParam(_minusBackground,_minFrame,_maxFrame);
 
@@ -283,17 +277,8 @@ void xfDlg::calculate3DXLF()
     pPeaks->setBrush(QBrush(Qt::red));
     pPeaks->setMarkerSize(5);
 
-    QScatterSeries *pLPeaks= new QScatterSeries();
-    pLPeaks->setName("peaks");
-    pLPeaks->setPen(QPen(Qt::black));
-    pLPeaks->setBrush(QBrush(Qt::red));
-    pLPeaks->setMarkerSize(5);
-
     for (unsigned long i=0;i<_bPeaks.count();++i)
-    {
         pPeaks->append(_data._angles.at(_bPeaks.at(i)),_minusBackground.at(_bPeaks.at(i)));
-        pLPeaks->append(_data._angles.at(_bPeaks.at(i)),_minusBackground.at(_bPeaks.at(i)));
-    }
 
     // calculate L and stdL
     QVector <double> _sum(4,0);
@@ -332,25 +317,6 @@ void xfDlg::calculate3DXLF()
     float _totalAngle = (_data._angles.at(_data._angles.count()-1)-_data._angles.at(0));
     float _timePerAngle = (*_data.pTotalTime) / _totalAngle;
 
-    /*
-    int i=2;
-    QTableWidgetItem *pItem;
-    pItem = new QTableWidgetItem(QString("%1").arg(_intervals.count()));
-    pItem->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
-    ui->pResultsTW->setItem(i,1,pItem);
-
-    pItem = new QTableWidgetItem(QString("%1 ± %2").arg(_sum[0]*_timePerAngle,0,'f',3).arg(_quadSum[0]*_timePerAngle,0,'f',3));
-    pItem->setTextAlignment(Qt::AlignRight|Qt::AlignVCenter);
-    ui->pResultsTW->setItem(i,2,pItem);
-
-    pItem = new QTableWidgetItem(QString("%1 ± %2").arg(_sum[1]*_timePerAngle,0,'f',3).arg(_quadSum[1]*_timePerAngle,0,'f',3));
-    pItem->setTextAlignment(Qt::AlignRight|Qt::AlignVCenter);
-    ui->pResultsTW->setItem(i,3,pItem);
-
-    pItem = new QTableWidgetItem(QString("%1 ± %2").arg(_sum[2],0,'f',3).arg(_quadSum[2],0,'f',3));
-    pItem->setTextAlignment(Qt::AlignRight|Qt::AlignVCenter);
-    ui->pResultsTW->setItem(i,4,pItem);
-*/
     if (pChart)
     {
         ui->pDataGV->scene()->removeItem(pChart);
@@ -361,8 +327,34 @@ void xfDlg::calculate3DXLF()
     pLevel->setName("level");
     for (int i=0;i<37;++i)
         pLevel->append(i*10,_level);
+
+    QLineSeries *pDataRegion = new QLineSeries();
+    QLineSeries *pDataRegionLow = new QLineSeries();
+    pDataRegion->setPen(QPen(Qt::gray));
+    pDataRegionLow->setPen(QPen(Qt::gray));
+
+    pDataRegion->append(_data._angles[_data._startFrame],0.0);
+    pDataRegion->append(_data._angles[_data._startFrame],0.75);
+    pDataRegionLow->append(_data._angles[_data._startFrame],0.0);
+    pDataRegionLow->append(_data._angles[_data._startFrame],0.0);
+
+    for (int i=_data._startFrame;i<_data._endFrame;i=i+5)
+    {
+        pDataRegion->append(_data._angles[i],0.75);
+        pDataRegionLow->append(_data._angles[i],0.0);
+    }
+    pDataRegion->append(_data._angles[_data._endFrame],0.75);
+    pDataRegion->append(_data._angles[_data._endFrame],0.0);
+    pDataRegionLow->append(_data._angles[_data._endFrame],0.0);
+    pDataRegionLow->append(_data._angles[_data._endFrame],0.0);
+
+    QAreaSeries *pAreaSeries = new QAreaSeries(pDataRegion,pDataRegionLow);
+    pAreaSeries->setBrush(QBrush(QColor(100,100,100,33)));
+    pAreaSeries->setPen(QPen(Qt::gray));
+
     QPolarChart *pPolChart=new QPolarChart();
     pPolChart->addSeries(_oData);
+    pPolChart->addSeries(pAreaSeries);
     _oData->setName("raw data");
     pPolChart->addSeries(_oData2);
     _oData2->setName("filtered breathing events");
@@ -388,12 +380,12 @@ void xfDlg::calculate3DXLF()
     pLevel->attachAxis(radialAxis);
     pPeaks->attachAxis(angularAxis);
     pPeaks->attachAxis(radialAxis);
+    pAreaSeries->attachAxis(angularAxis);
+    pAreaSeries->attachAxis(radialAxis);
     pIntervals->attachAxis(angularAxis);
     pIntervals->attachAxis(radialAxis);
-    //pChart->addSeries(_avData);
     pPolChart->setAnimationOptions(QChart::SeriesAnimations);
     pPolChart->legend()->setEnabled(false);
-
 
     pPolChart->setBackgroundBrush(QBrush(Qt::NoBrush));
     pPolChart->setSizePolicy(QSizePolicy(QSizePolicy::MinimumExpanding,QSizePolicy::MinimumExpanding));
@@ -402,7 +394,6 @@ void xfDlg::calculate3DXLF()
     pChart = pPolChart;
     ui->pDataGV->scene()->addItem(pChart);
     ui->pTabWdgt->setCurrentIndex(1);
-
 
     if (!pResultTxtItem)
     {

@@ -3,7 +3,7 @@
 #include <QBitmap>
 #include "xfinsertnrdlg.h"
 
-LCDConnector::LCDConnector(QLCDNumber *pLCD,QToolButton *pUp,QToolButton *pDown,float lLimit,float uLimit,float tick,float *pRef):QObject()
+LCDConnector::LCDConnector(QLCDNumber *pLCD,QToolButton *pUp,QToolButton *pDown,float lLimit,float uLimit,float tick,float *pRef,int t):QObject()
 {
     QPixmap up(":/images/up.png");
     up = up.scaledToWidth(30);
@@ -37,6 +37,7 @@ LCDConnector::LCDConnector(QLCDNumber *pLCD,QToolButton *pUp,QToolButton *pDown,
     pDownBtn=pDown;
     pNr=pLCD;
     pNr->installEventFilter(this);
+    tag = t;
 
     connect(pUp,SIGNAL(clicked()),this,SLOT(up()));
     connect(pDown,SIGNAL(clicked()),this,SLOT(down()));
@@ -46,6 +47,7 @@ void LCDConnector::setNr(const float& nr)
 {
     *pReference=nr;
     pNr->display(nr);
+    emit modified(tag);
 }
 
 bool LCDConnector::eventFilter(QObject *watched, QEvent *event)
@@ -78,6 +80,7 @@ void LCDConnector::up()
 
     *pReference = value;
     pNr->display(*pReference);
+    emit modified(tag);
 }
 
 void LCDConnector::down()
@@ -98,5 +101,6 @@ void LCDConnector::down()
 
     *pReference = value;
     pNr->display(*pReference);
+    emit modified(tag);
 }
 

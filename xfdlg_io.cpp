@@ -6,16 +6,76 @@
 
 #include <QTextStream>
 #include <QDateEdit>
+#include <QFileInfo>
 
 using namespace std;
+
+void xfDlg::saveSettings()
+{
+    QFile f("xLFinal_settings.dat");
+    if (f.open(QFile::WriteOnly))
+    {
+        QTextStream t(&f);
+
+        t << (*_data.pTotalTime) << Qt::endl;
+        t << (*_data.pRotationAngle) << Qt::endl;
+        t << (*_data.pBodyMass) << Qt::endl;
+        t << (*_data.pLevelInPercent) << Qt::endl;
+        t << (*_data.pHarmonics) << Qt::endl;
+        t << (*_data.pPeakCorrTimeWindowInMS) << Qt::endl;
+        t << (*_data.pTrendCorrTimeWindowInMS) << Qt::endl;
+
+        f.close();
+    }
+}
+
+void xfDlg::restoreSettings()
+{
+    QFile f("xLFinal_settings.dat");
+    if (f.open(QFile::ReadOnly))
+    {
+        QTextStream t(&f);
+
+        QString s;
+        s=t.readLine();(*_data.pTotalTime)=s.toFloat();ui->pTotalTimeLCD->display(*_data.pTotalTime);
+        s=t.readLine();(*_data.pRotationAngle)=s.toFloat();ui->pAngleLCD->display(*_data.pRotationAngle);
+        s=t.readLine();(*_data.pBodyMass)=s.toFloat();ui->pMassLCD->display(*_data.pBodyMass);
+        s=t.readLine();(*_data.pLevelInPercent)=s.toFloat();ui->pLevelLCD->display(*_data.pLevelInPercent);
+        s=t.readLine();(*_data.pHarmonics)=s.toFloat();ui->pHarmonicsLCD->display(*_data.pHarmonics);
+        s=t.readLine();(*_data.pPeakCorrTimeWindowInMS)=s.toFloat();ui->pPeakCorrTimeWindowLCD->display(*_data.pPeakCorrTimeWindowInMS);
+        s=t.readLine();(*_data.pTrendCorrTimeWindowInMS)=s.toFloat();ui->pTrendCorrTimeWindowLCD->display(*_data.pTrendCorrTimeWindowInMS);
+
+        f.close();
+    }
+}
+
+void xfDlg::defaultSettings()
+{
+    *_data.pTotalTime=34;ui->pTotalTimeLCD->display(*_data.pTotalTime);
+    *_data.pRotationAngle=360;ui->pAngleLCD->display(*_data.pRotationAngle);
+    *_data.pBodyMass=18;ui->pMassLCD->display(*_data.pBodyMass);
+    *_data.pLevelInPercent=40;ui->pLevelLCD->display(*_data.pLevelInPercent);
+    *_data.pHarmonics=10;ui->pHarmonicsLCD->display(*_data.pHarmonics);
+    *_data.pPeakCorrTimeWindowInMS=50;ui->pPeakCorrTimeWindowLCD->display(*_data.pPeakCorrTimeWindowInMS);
+    *_data.pTrendCorrTimeWindowInMS=1500;ui->pTrendCorrTimeWindowLCD->display(*_data.pTrendCorrTimeWindowInMS);
+}
 
 void xfDlg::exportResults()
 {
     if (_data._dataValid && pResultTxtItem)
     {
-        QString fname;
-        fname += QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss")+".csv";
-        QFile f(fname);
+        QFileInfo info(_data._fileName);
+
+        QString fname;        
+        fname += info.absolutePath()+"/"+info.baseName()+"_"+QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
+                
+        // export graph
+        QPixmap pix = ui->pDataGV->grab(ui->pDataGV->mapFromScene(pChart->mapToScene(pChart->boundingRect())).boundingRect());
+        pix.save(fname+".png","PNG");
+        emit MSG(fname+".png has been saved");
+        
+        
+        QFile f(fname+".csv");
         if (f.open(QFile::WriteOnly))
         {
             QTextStream t(&f);
@@ -31,7 +91,7 @@ void xfDlg::exportResults()
 
             f.close();
 
-            xfMSGDlg dlg(QString("resulted exported to:\n%1").arg(fname));
+            xfMSGDlg dlg("..."+fname.right(50));
             dlg.exec();
         }
         else

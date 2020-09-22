@@ -19,17 +19,14 @@ using namespace alglib;
 void xfDlg::calculate2DXLF()
 {
 
-    int _minFrame = 0;
-    int _maxFrame = _data._frames-1;
+    int _minFrame = _data._startFrame;
+    int _maxFrame = _data._endFrame;
 
     // create Regions
 
-    QRegion leftRegion=_leftLobeVis.pLobePathItem->boundingRegion(_leftLobeVis.pLobePathItem->sceneTransform());
-    QRect leftRegionBRect=leftRegion.boundingRect();
-    QRegion rightRegion=_rightLobeVis.pLobePathItem->boundingRegion(_rightLobeVis.pLobePathItem->sceneTransform());
-    QRect rightRegionBRect=rightRegion.boundingRect();
-    QRectF bRect;
-    bRect = leftRegionBRect.united(rightRegionBRect);
+    QRectF leftRegionBRect = pPixItem->mapRectFromItem(_leftLobeVis.pLobePathItem,_leftLobeVis.pLobePathItem->boundingRect());
+    QRectF rightRegionBRect = pPixItem->mapRectFromItem(_rightLobeVis.pLobePathItem,_rightLobeVis.pLobePathItem->boundingRect());
+    QRectF rec = leftRegionBRect.united(rightRegionBRect);
     // pixmap item needs to have identity scene transform
     // walk over all frames and calculate av.air, std.air
     // norm values with background
@@ -74,6 +71,25 @@ void xfDlg::calculate2DXLF()
 
     quint16* pBuffer=(uint16*)_TIFFmalloc(imageWidth*imageLength*sizeof(uint16));
 
+    QPainterPath _lpath = pPixItem->mapFromItem(_leftLobeVis.pLobePathItem,_leftLobeVis.pLobePathItem->path());
+    QPainterPath _rpath = pPixItem->mapFromItem(_rightLobeVis.pLobePathItem,_rightLobeVis.pLobePathItem->path());
+    long swx = min(rec.left(),rec.right());
+    long ewx = max(rec.left(),rec.right())+1;
+    long swy = min(rec.bottom(),rec.top());
+    long ewy = max(rec.bottom(),rec.top())+1;
+
+    // generate a mask first!!!!
+    unsigned char* mask=(unsigned char*)malloc(imageWidth*imageLength);
+    memset(mask,0,imageWidth*imageLength);
+    for (int x=swx;x<ewx;++x)
+        for (int y=swy;y<ewy;++y)
+        {
+            if (_lpath.contains(QPointF(x,y)))
+                mask[x+y*imageWidth]=1;
+            if (_rpath.contains(QPointF(x,y)))
+                mask[x+y*imageWidth]=2;
+        }
+
     for (long t=0;t<_data._frames && !_abb ;++t)
     {
         countL=countR=countB=0;
@@ -92,37 +108,24 @@ void xfDlg::calculate2DXLF()
         }
         _TIFFfree(buf);
 
-        QPointF lPos;
-        QPointF rPos;
-        long xp,yp;
-
-        QImage img(imageWidth,imageLength,QImage::Format_RGB32);
-        img.fill(Qt::white);
-        QPainter pain(&img);
-        pain.setPen(QPen(Qt::red));
-
-        for (int x=bRect.left();x<=bRect.right();++x)
-            for (int y=bRect.top();y<=bRect.bottom();++y)
+        long pos;
+        for (int x=swx;x<ewx;++x)
+            for (int y=swy;y<ewy;++y)
             {
-
-
-                if (_leftLobeVis.pLobePathItem->path().contains(_leftLobeVis.pLobePathItem->mapFromItem(pPixItem,QPointF(x,y))))
+                pos = x+y*imageWidth;
+                if (mask[pos]==1)
                 {
-                    lPos=pPixItem->mapFromScene(QPointF(x,y));
-                    pain.drawPoint(x,y);
                     countL++;
                     countB++;
-                    sumLBuffer+=pBuffer[(long)lPos.x()+(long)lPos.y()*imageWidth];
-                    sumBBuffer+=pBuffer[(long)lPos.x()+(long)lPos.y()*imageWidth];
+                    sumLBuffer+=pBuffer[pos];
+                    sumBBuffer+=pBuffer[pos];
                 }
-                if (_rightLobeVis.pLobePathItem->path().contains(QPoint(x,y)))
+                if (mask[pos]==2)
                 {
-                    //rPos=pPixItem->mapFromItem(_rightLobeVis.pLobePathItem,QPointF(x,y));
-                    pain.drawPoint(rPos);
                     countR++;
                     countB++;
-                    sumRBuffer+=pBuffer[(long)rPos.x()+(long)rPos.y()*imageWidth];
-                    sumBBuffer+=pBuffer[(long)rPos.x()+(long)rPos.y()*imageWidth];
+                    sumRBuffer+=pBuffer[pos];
+                    sumBBuffer+=pBuffer[pos];
                 }
             }
         countL>0 ? sumLBuffer/=countL : sumLBuffer=0;
@@ -132,12 +135,9 @@ void xfDlg::calculate2DXLF()
         _avBoth.append(sumBBuffer);
         _avLeftLobe.append(sumLBuffer);
         _avRightLobe.append(sumRBuffer);
-
-        pain.end();
-        img.save("/home/heimdall/test_image.png");
-        QMessageBox::warning(0,"","");
     }
 
+    free(mask);
     TIFFClose(tif);
     if (_abb) return;
 
@@ -198,11 +198,10 @@ void xfDlg::calculate2DXLF()
     QVector <int> _bPeaks;
 
     float _lvl = (*_data.pLevelInPercent);
-    int _minWidth = (*_data.pMinIntervalLengthInMS) / 1000.0f *fps;
 
-    findMaxPositions(_flBg,_lPeaks,_minFrame,_maxFrame,_lvl,_minWidth);
-    findMaxPositions(_frBg,_rPeaks,_minFrame,_maxFrame,_lvl,_minWidth);
-    findMaxPositions(_fbBg,_bPeaks,_minFrame,_maxFrame,_lvl,_minWidth);
+    findMaxPositions(_flBg,_lPeaks,_minFrame,_maxFrame,_lvl);
+    findMaxPositions(_frBg,_rPeaks,_minFrame,_maxFrame,_lvl);
+    findMaxPositions(_fbBg,_bPeaks,_minFrame,_maxFrame,_lvl);
 
     QScatterSeries *pPeaks= new QScatterSeries();
     pPeaks->setName("peaks");
@@ -232,9 +231,9 @@ void xfDlg::calculate2DXLF()
 
     //   XLFParam generateParam(QVector <float> values,int minFrame,int maxFrame,float fps,float lvl, int _width, float _intervalFilter);
 
-    _data._left = generateParam(_avLeftLobe,_minFrame,_maxFrame,fps,_lvl,(*_data.pMinIntervalLengthInMS)/1000.f*fps,(*_data.pTrendCorrTimeWindowInMS)/1000.0f*fps);
-    _data._right = generateParam(_avRightLobe,_minFrame,_maxFrame,fps,_lvl,(*_data.pMinIntervalLengthInMS)/1000.f*fps,(*_data.pTrendCorrTimeWindowInMS)/1000.0f*fps);
-    _data._both = generateParam(_avBoth,_minFrame,_maxFrame,fps,_lvl,(*_data.pMinIntervalLengthInMS)/1000.f*fps,(*_data.pTrendCorrTimeWindowInMS)/1000.0f*fps);
+    _data._left = generateParam(_avLeftLobe,_minFrame,_maxFrame,fps,_lvl,(*_data.pTrendCorrTimeWindowInMS)/1000.0f*fps);
+    _data._right = generateParam(_avRightLobe,_minFrame,_maxFrame,fps,_lvl,(*_data.pTrendCorrTimeWindowInMS)/1000.0f*fps);
+    _data._both = generateParam(_avBoth,_minFrame,_maxFrame,fps,_lvl,(*_data.pTrendCorrTimeWindowInMS)/1000.0f*fps);
 
     if (!_data._left._valid || !_data._right._valid || !_data._both._valid)
     {
@@ -284,7 +283,7 @@ void xfDlg::calculate2DXLF()
         pResultTxtItem = new QGraphicsSimpleTextItem();
         ui->pDataGV->scene()->addItem(pResultTxtItem);
         QFont f=font();
-        f.setPixelSize(17);
+        f.setPixelSize(15);
         pResultTxtItem->setFont(f);
         pResultTxtItem->setPen(QPen(Qt::black));
     }
@@ -411,24 +410,16 @@ void xfDlg::calculate2DXLF()
     pChart->addSeries(_bRSeries);
     pChart->addSeries(_bBSeries);
 
-    _data._startFrame = 0;
-    _data._endFrame = _data._frames-1;
-
-    // boundaries
-    if (_data._startFrame>0) {
-        QLineSeries *_leftBoundary = new QLineSeries();
-        (*_leftBoundary) << QPointF((float)_data._startFrame/fps,_minBackground) << QPointF((float)_data._startFrame/fps,_maxBackground);
-        _leftBoundary->setPen(QPen(Qt::black));
-        _leftBoundary->setName("lower limit");
-        pChart->addSeries(_leftBoundary);
-    }
-    if (_data._endFrame != -1 && _data._endFrame<_data._frames-1) {
-        QLineSeries *_rightBoundary = new QLineSeries();
-        (*_rightBoundary) << QPointF((float)_data._endFrame/fps,_minBackground) << QPointF((float)_data._endFrame/fps,_maxBackground);
-        _rightBoundary->setPen(QPen(Qt::black));
-        _rightBoundary->setName("upper limit");
-        pChart->addSeries(_rightBoundary);
-    }
+    QLineSeries *_leftBoundary = new QLineSeries();
+    QLineSeries *_rightBoundary = new QLineSeries();
+    (*_leftBoundary) << QPointF((float)_data._startFrame/fps,_minBackground*0.99) << QPointF((float)_data._startFrame/fps,_maxBackground*1.01);
+    (*_leftBoundary) << QPointF((float)_data._endFrame/fps,_maxBackground*1.01) << QPointF((float)_data._endFrame/fps,_minBackground*0.99);
+    (*_rightBoundary) << QPointF((float)_data._startFrame/fps,_minBackground*0.99) << QPointF((float)_data._startFrame/fps,_minBackground*0.99);
+    (*_rightBoundary) << QPointF((float)_data._endFrame/fps,_minBackground*0.99) << QPointF((float)_data._endFrame/fps,_minBackground*0.99);
+    QAreaSeries *pAreaSeries = new QAreaSeries(_leftBoundary,_rightBoundary);
+    pAreaSeries->setPen(QPen(Qt::gray));
+    pAreaSeries->setBrush(QBrush(QColor(100,100,100,33)));
+    pChart->addSeries(pAreaSeries);
     pChart->createDefaultAxes();
 /*
     XLFCheckBox *pCheckBox = new XLFCheckBox(0);
@@ -492,7 +483,7 @@ void xfDlg::calculate2DXLF()
     ui->pDataGV->scene()->setSceneRect(0,0,ui->pDataGV->width()-20,ui->pDataGV->height()-20);
     ui->pDataGV->scene()->addItem(pChart);
     ui->pTabWdgt->setCurrentIndex(1);
-    pResultTxtItem->setPos(40,290);
+    pResultTxtItem->setPos(50,310);
 
     updateAndDisplayStatus();
 }

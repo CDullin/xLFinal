@@ -32,6 +32,7 @@ xfDlg::xfDlg(QWidget *parent)
 
     ui->pGV->setScene(new QGraphicsScene());
     ui->pDataGV->setScene(new QGraphicsScene());
+    ui->pFrameDial->setFocusPolicy(Qt::NoFocus);
 
     QTimer *pTimer = new QTimer(this);
     pTimer->setInterval(1000);
@@ -52,17 +53,27 @@ xfDlg::xfDlg(QWidget *parent)
     connect(ui->pHideShowControlPointsTB,SIGNAL(toggled(bool)),SLOT(hideShowControlPoints(bool)));
     connect(ui->pMirrorXTB,SIGNAL(toggled(bool)),this,SLOT(dispFrame()));
     connect(ui->pMirrorYTB,SIGNAL(toggled(bool)),this,SLOT(dispFrame()));
+    connect(ui->pSaveSettingsTB,SIGNAL(clicked()),this,SLOT(saveSettings()));
+    connect(ui->pRestoreSettingsTB,SIGNAL(clicked()),this,SLOT(restoreSettings()));
+    connect(ui->pResetSettingsTB,SIGNAL(clicked()),this,SLOT(defaultSettings()));
 
     ui->pTabWdgt->setCurrentIndex(0);
 
-    new LCDConnector(ui->pTotalTimeLCD,ui->pUpTotalTimeTB,ui->pDownTotalTimeTB,5,20000,1,_data.pTotalTime);
-    new LCDConnector(ui->pAngleLCD,ui->pUpAngleTB,ui->pDownAngleTB,180,20000,1,_data.pRotationAngle);
-    new LCDConnector(ui->pMassLCD,ui->pUpMassTB,ui->pDownMassTB,10,30,0.1,_data.pBodyMass);
-    new LCDConnector(ui->pLevelLCD,ui->pUpLevel,ui->pDownLevel,5,95,1,_data.pLevelInPercent);
-    new LCDConnector(ui->pHarmonicsLCD,ui->pUpHarmonics,ui->pDownHarmonics,2,30,1,_data.pHarmonics);
-    new LCDConnector(ui->pTrendCorrTimeWindowLCD,ui->pUpTrend,ui->pDownTrend,0,5000,100,_data.pTrendCorrTimeWindowInMS);
-    new LCDConnector(ui->pPeakCorrTimeWindowLCD,ui->pUpPeak,ui->pDownPeak,0,500,10,_data.pPeakCorrTimeWindowInMS);
-    new LCDConnector(ui->pMinIntervalLengthLCD,ui->pUpInterval,ui->pDownInterval,0,500,10,_data.pMinIntervalLengthInMS);
+    LCDConnector *pLCDConnector;
+    pLCDConnector = new LCDConnector(ui->pTotalTimeLCD,ui->pUpTotalTimeTB,ui->pDownTotalTimeTB,5,20000,1,_data.pTotalTime,0x01);
+    connect(pLCDConnector,SIGNAL(modified(int)),this,SLOT(LCDModified(int)));
+    pLCDConnector = new LCDConnector(ui->pAngleLCD,ui->pUpAngleTB,ui->pDownAngleTB,180,20000,1,_data.pRotationAngle,0x02);
+    connect(pLCDConnector,SIGNAL(modified(int)),this,SLOT(LCDModified(int)));
+    pLCDConnector = new LCDConnector(ui->pMassLCD,ui->pUpMassTB,ui->pDownMassTB,10,30,0.1,_data.pBodyMass,0x03);
+    connect(pLCDConnector,SIGNAL(modified(int)),this,SLOT(LCDModified(int)));
+    pLCDConnector = new LCDConnector(ui->pLevelLCD,ui->pUpLevel,ui->pDownLevel,5,95,1,_data.pLevelInPercent,0x04);
+    connect(pLCDConnector,SIGNAL(modified(int)),this,SLOT(LCDModified(int)));
+    pLCDConnector = new LCDConnector(ui->pHarmonicsLCD,ui->pUpHarmonics,ui->pDownHarmonics,2,30,1,_data.pHarmonics,0x05);
+    connect(pLCDConnector,SIGNAL(modified(int)),this,SLOT(LCDModified(int)));
+    pLCDConnector = new LCDConnector(ui->pTrendCorrTimeWindowLCD,ui->pUpTrend,ui->pDownTrend,0,5000,100,_data.pTrendCorrTimeWindowInMS,0x06);
+    connect(pLCDConnector,SIGNAL(modified(int)),this,SLOT(LCDModified(int)));
+    pLCDConnector = new LCDConnector(ui->pPeakCorrTimeWindowLCD,ui->pUpPeak,ui->pDownPeak,0,500,10,_data.pPeakCorrTimeWindowInMS,0x07);
+    connect(pLCDConnector,SIGNAL(modified(int)),this,SLOT(LCDModified(int)));
 
     QPixmap up(":/images/up.png");
     up = up.scaledToWidth(30);
@@ -72,13 +83,12 @@ xfDlg::xfDlg(QWidget *parent)
     pain.drawPixmap(5,5,up);
     pain.end();
     QBitmap upbmp = empty.createHeuristicMask();
-
     QPixmap down(":/images/down.png");
-    up = up.scaledToWidth(30);
+    down = down.scaledToWidth(30);
     empty.fill(QColor(0,0,0,0));
     QPainter pain2(&empty);
-    pain.drawPixmap(5,5,down);
-    pain.end();
+    pain2.drawPixmap(5,5,down);
+    pain2.end();
     QBitmap downbmp = empty.createHeuristicMask();
 
     ui->pStartTimeTB->setMask(upbmp);
@@ -90,13 +100,39 @@ xfDlg::xfDlg(QWidget *parent)
     connect(this,SIGNAL(MSG(const QString&,const bool&)),this,SLOT(MSGSlot(const QString&,const bool&)));
     installEventFilter(this);
     ui->pFrameDial->installEventFilter(this);
+
+    ui->pMirrorXTB->hide();
+    ui->pMirrorYTB->hide();
+    ui->pHideShowControlPointsTB->hide();
+
     selectedImportFile("/run/media/heimdall/ex_puppy/rotation-lung-function/CM_20200828_095023/CM_20200828_095023.TIF");
+}
+
+void xfDlg::LCDModified(int tag)
+{
+    QPixmap pix;
+    switch (tag)
+    {
+    case 0x04: pix=QPixmap(":/images/level_explanation.png");break;
+    case 0x05: pix=QPixmap(":/images/harmonics_explanation.png");break;
+    case 0x06: pix=QPixmap(":/images/detrending_explanation.png");break;
+    }
+
+    if (pExplanationPixItem==nullptr)
+    {
+        pExplanationPixItem = new QGraphicsPixmapItem();
+        if (ui->pExplanationGV->scene()==nullptr)
+            ui->pExplanationGV->setScene(new QGraphicsScene());
+        ui->pExplanationGV->scene()->addItem(pExplanationPixItem);
+    }
+    pExplanationPixItem->setPixmap(pix);
 }
 
 void xfDlg::resetStartFrame()
 {
     _data._startFrame = 0;
     ui->pStartTimeTB->hide();
+    updateAndDisplayStatus();
 }
 
 void xfDlg::resetEndFrame()
@@ -109,28 +145,27 @@ bool xfDlg::eventFilter(QObject *watched, QEvent *event)
 {
     if (watched==ui->pFrameDial && event->type()==QEvent::MouseButtonDblClick)
     {
-        float posInPerc = ((float)ui->pFrameDial->value()-(float)ui->pFrameDial->minimum())/((float)ui->pFrameDial->maximum() - (float)ui->pFrameDial->minimum());
-        float xPos = posInPerc*285.0f+590;
-
         if (!ui->pStartTimeTB->isVisible())
         {
             _data._startFrame = ui->pFrameDial->value();
-            ui->pStartTimeTB->move(xPos,ui->pStartTimeTB->pos().y());
             ui->pStartTimeTB->show();
         }
         else
         {
             if (!ui->pEndTimeTB->isVisible())
             {
-                _data._startFrame = ui->pFrameDial->value();
-                ui->pEndTimeTB->move(xPos,ui->pEndTimeTB->pos().y());
+                _data._endFrame = ui->pFrameDial->value();
                 ui->pEndTimeTB->show();
             }
             else
             {
-
+                if (fabs(ui->pFrameDial->value()-_data._startFrame)<fabs(ui->pFrameDial->value()-_data._endFrame))
+                    _data._startFrame = ui->pFrameDial->value();
+                else
+                    _data._endFrame = ui->pFrameDial->value();
             }
         }
+        updateAndDisplayStatus();
     }
 
     if (event->type()==QEvent::KeyPress)
@@ -155,6 +190,20 @@ bool xfDlg::eventFilter(QObject *watched, QEvent *event)
             case Qt::Key_P : // play / stop
                 ui->pTabWdgt->setCurrentIndex(0);
                 ui->pPlayTB->animateClick();
+                break;
+            case Qt::Key_End: // end
+            {
+                _data._endFrame = ui->pFrameDial->value();
+                ui->pEndTimeTB->show();
+                updateAndDisplayStatus();
+            }
+                break;
+            case Qt::Key_Home: // pos1
+            {
+                _data._startFrame = ui->pFrameDial->value();
+                ui->pStartTimeTB->show();
+                updateAndDisplayStatus();
+            }
                 break;
             default:
                 break;
@@ -251,6 +300,24 @@ void xfDlg::updateAndDisplayStatus()
             ui->pVisCB->show();
         }
     }
+
+    if (_data._dataValid)
+    {
+        if (_data._startFrame>=_data._endFrame)
+            _data._startFrame = _data._endFrame-1;
+        float posInPerc = ((float)_data._endFrame-(float)ui->pFrameDial->minimum())/((float)ui->pFrameDial->maximum() - (float)ui->pFrameDial->minimum());
+        float xPos = posInPerc*280.0f+590;
+        ui->pEndTimeTB->move(xPos,412);
+        ui->pEndTimeTB->show();
+        posInPerc = ((float)_data._startFrame-(float)ui->pFrameDial->minimum())/((float)ui->pFrameDial->maximum() - (float)ui->pFrameDial->minimum());
+        xPos = posInPerc*280.0f+590;
+        ui->pStartTimeTB->move(xPos,412);
+
+        if (_data._startFrame<=0) ui->pStartTimeTB->hide();
+        if (_data._endFrame==-1 || _data._endFrame>=_data._frames-1) ui->pEndTimeTB->hide();
+
+        ui->pFrameNrLab->setText(QString("%1..%2[%3]").arg(_data._startFrame).arg(_data._endFrame).arg(_data._frames));
+    }
 }
 
 void xfDlg::MSGSlot(const QString& txt, const bool& error)
@@ -311,6 +378,8 @@ void xfDlg::selectedImportFile(const QString& fname)
         ui->pTotalTimeLCD->display(*_data.pTotalTime);
     }
 
+    _data._startFrame=0;
+    _data._endFrame=_data._frames-1;
 
     ui->pFrameDial->setRange(0,_data._frames-1);
 

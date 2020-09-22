@@ -34,13 +34,13 @@ public:
     QString _fileName = "";
     QVector <float> _angles;
     XLFParam _left,_right,_both;
-    long _startFrame,_endFrame;
+    long _startFrame=-2;
+    long _endFrame=-1;
 
     float *pHarmonics = nullptr;
     float *pTrendCorrTimeWindowInMS = nullptr;
     float *pPeakCorrTimeWindowInMS = nullptr;
     float *pLevelInPercent = nullptr;
-    float *pMinIntervalLengthInMS = nullptr;
 
     DataContainer()
     {
@@ -50,7 +50,6 @@ public:
         pHarmonics = new float(10);
         pTrendCorrTimeWindowInMS = new float(1000);
         pPeakCorrTimeWindowInMS = new float(100);
-        pMinIntervalLengthInMS = new float(100);
         pLevelInPercent = new float(40);
     };
 };
