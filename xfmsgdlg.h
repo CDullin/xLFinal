@@ -15,6 +15,9 @@ public:
     explicit xfMSGDlg(const QString& txt,QWidget *parent = nullptr);
     ~xfMSGDlg();
 
+protected:
+    void keyPressEvent(QKeyEvent *) override;
+
 private:
     Ui::xfMSGDlg *ui;
 };

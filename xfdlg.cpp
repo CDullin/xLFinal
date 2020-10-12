@@ -13,6 +13,7 @@
 #include "xf_tools.h"
 #include "xf_types.h"
 #include "lcdconnector.h"
+#include "xfquestiondlg.h"
 
 using namespace alglib;
 using namespace QtCharts;
@@ -31,6 +32,7 @@ xfDlg::xfDlg(QWidget *parent)
     setWindowFlag(Qt::FramelessWindowHint,true);
 
     ui->pGV->setScene(new QGraphicsScene());
+    ui->pGV->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing);
     ui->pDataGV->setScene(new QGraphicsScene());
     ui->pFrameDial->setFocusPolicy(Qt::NoFocus);
 
@@ -72,8 +74,7 @@ xfDlg::xfDlg(QWidget *parent)
     connect(pLCDConnector,SIGNAL(modified(int)),this,SLOT(LCDModified(int)));
     pLCDConnector = new LCDConnector(ui->pTrendCorrTimeWindowLCD,ui->pUpTrend,ui->pDownTrend,0,5000,100,_data.pTrendCorrTimeWindowInMS,0x06);
     connect(pLCDConnector,SIGNAL(modified(int)),this,SLOT(LCDModified(int)));
-    pLCDConnector = new LCDConnector(ui->pPeakCorrTimeWindowLCD,ui->pUpPeak,ui->pDownPeak,0,500,10,_data.pPeakCorrTimeWindowInMS,0x07);
-    connect(pLCDConnector,SIGNAL(modified(int)),this,SLOT(LCDModified(int)));
+    LCDModified(4);
 
     QPixmap up(":/images/up.png");
     up = up.scaledToWidth(30);
@@ -105,7 +106,49 @@ xfDlg::xfDlg(QWidget *parent)
     ui->pMirrorYTB->hide();
     ui->pHideShowControlPointsTB->hide();
 
-    selectedImportFile("/run/media/heimdall/ex_puppy/rotation-lung-function/CM_20200828_095023/CM_20200828_095023.TIF");
+    ui->pMSGBrowser->verticalScrollBar()->setStyleSheet(
+    QString::fromUtf8("QScrollBar:vertical {"
+                      "background: #ddd;"
+                      "border: 2px solid #fff;"
+                      "border-radius: 5px;"
+                      "width: 40px;"
+                      "margin: 7px;"
+                      "}"
+                      "QScrollBar::handle:vertical {"
+                      "min-height: 30px;"
+                      "background: #636668;"
+                      "border: 0px solid;"
+                      "border-radius: 5px;"
+                    "}"
+                    "QScrollBar::add-line:vertical {"
+                    "    height: 0px;"
+                    "    subcontrol-position: bottom;"
+                    "    subcontrol-origin: margin;"
+                                  "border-radius: 5px;"
+                      "margin: 7px;"
+                    "}"
+                    "QScrollBar::sub-line:vertical {"
+                    "    height: 0px;"
+                    "    subcontrol-position: top;"
+                    "    subcontrol-origin: margin;"
+                                  "border-radius: 5px;"
+                      "margin: 7px;"
+                    "}"
+       ));
+
+    ui->pInstructionBrowser->verticalScrollBar()->setStyleSheet(ui->pMSGBrowser->verticalScrollBar()->styleSheet());
+    ui->pInstructionBrowser->setSource(QUrl("qrc:/manual/manual.html"));
+
+    //selectedImportFile("/run/media/heimdall/ex_puppy/rotation-lung-function/CM_20200828_095023/CM_20200828_095023.TIF");
+    restoreSettings();
+    updateAndDisplayStatus();
+}
+
+void xfDlg::reject()
+{
+    xfQuestionDlg dlg("Do you really like\nto close the program?");
+    saveSettings();
+    if (dlg.exec()==QDialog::Accepted) QDialog::reject();
 }
 
 void xfDlg::LCDModified(int tag)
@@ -303,6 +346,33 @@ void xfDlg::updateAndDisplayStatus()
 
     if (_data._dataValid)
     {
+        ui->pTabWdgt->setTabEnabled(1,true);
+        ui->pNoDataLab->hide();
+        // button
+        ui->pStartTB->setEnabled(true);
+        ui->pPlayTB->setEnabled(true);
+        ui->pBodyMassLab->setEnabled(true);
+        ui->pTotalAngleTB->setEnabled(true);
+        ui->pTotalTimeLab->setEnabled(true);
+        ui->pAnalysisLab->setEnabled(true);
+        ui->pFrameDial->setEnabled(true);
+        ui->pFrameNrLab->setEnabled(true);
+        ui->pMassLCD->setEnabled(true);
+        ui->pAngleLCD->setEnabled(true);
+        ui->pTotalTimeLCD->setEnabled(true);
+        ui->pDownMassTB->setEnabled(true);
+        ui->pUpMassTB->setEnabled(true);
+        ui->pDownAngleTB->setEnabled(true);
+        ui->pUpAngleTB->setEnabled(true);
+        ui->pDownTotalTimeTB->setEnabled(true);
+        ui->pUpTotalTimeTB->setEnabled(true);
+        ui->pMassUnitLab->setEnabled(true);
+        ui->pAngleUnitLab->setEnabled(true);
+        ui->pTimeUnitLab->setEnabled(true);
+        ui->pMassCapLab->setEnabled(true);
+        ui->pAngleCapLab->setEnabled(true);
+        ui->pTimeCapLab->setEnabled(true);
+
         if (_data._startFrame>=_data._endFrame)
             _data._startFrame = _data._endFrame-1;
         float posInPerc = ((float)_data._endFrame-(float)ui->pFrameDial->minimum())/((float)ui->pFrameDial->maximum() - (float)ui->pFrameDial->minimum());
@@ -312,11 +382,63 @@ void xfDlg::updateAndDisplayStatus()
         posInPerc = ((float)_data._startFrame-(float)ui->pFrameDial->minimum())/((float)ui->pFrameDial->maximum() - (float)ui->pFrameDial->minimum());
         xPos = posInPerc*280.0f+590;
         ui->pStartTimeTB->move(xPos,412);
+        ui->pStartTimeTB->show();
 
         if (_data._startFrame<=0) ui->pStartTimeTB->hide();
+        else ui->pStartTB->show();
         if (_data._endFrame==-1 || _data._endFrame>=_data._frames-1) ui->pEndTimeTB->hide();
+        else ui->pEndTimeTB->show();
 
         ui->pFrameNrLab->setText(QString("%1..%2[%3]").arg(_data._startFrame).arg(_data._endFrame).arg(_data._frames));
+
+        if (!ui->pTotalAngleTB->isChecked())
+        {
+            ui->pAngleLCD->setEnabled(false);
+            ui->pAngleCapLab->setEnabled(false);
+            ui->pAngleUnitLab->setEnabled(false);
+            ui->pUpAngleTB->setEnabled(false);
+            ui->pDownAngleTB->setEnabled(false);
+        }
+
+    }
+    else
+    {
+        // disable page 1
+        ui->pTabWdgt->setCurrentIndex(0);
+        ui->pTabWdgt->setTabEnabled(1,false);
+        ui->pFrameDial->setValue(ui->pFrameDial->minimum());
+        startStopPlayTime(false);
+        hideShowControlPoints(false);
+
+        ui->pNoDataLab->show();
+        // button
+        ui->pStartTB->setEnabled(false);
+        ui->pPlayTB->setEnabled(false);
+        ui->pBodyMassLab->setEnabled(false);
+        ui->pTotalAngleTB->setEnabled(false);
+        ui->pTotalTimeLab->setEnabled(false);
+        ui->pAnalysisLab->setEnabled(false);
+        ui->pStartTimeTB->hide();
+        ui->pEndTimeTB->hide();
+        ui->pFrameDial->setEnabled(false);
+        ui->pFrameNrLab->setText("no data");
+        ui->pFrameNrLab->setEnabled(false);
+        ui->pMassLCD->setEnabled(false);
+        ui->pAngleLCD->setEnabled(false);
+        ui->pTotalTimeLCD->setEnabled(false);
+        ui->pDownMassTB->setEnabled(false);
+        ui->pUpMassTB->setEnabled(false);
+        ui->pDownAngleTB->setEnabled(false);
+        ui->pUpAngleTB->setEnabled(false);
+        ui->pDownTotalTimeTB->setEnabled(false);
+        ui->pUpTotalTimeTB->setEnabled(false);
+        ui->pMassUnitLab->setEnabled(false);
+        ui->pAngleUnitLab->setEnabled(false);
+        ui->pTimeUnitLab->setEnabled(false);
+        ui->pMassCapLab->setEnabled(false);
+        ui->pAngleCapLab->setEnabled(false);
+        ui->pTimeCapLab->setEnabled(false);
+        ui->pFileNameLEdit->setText("<no file>");
     }
 }
 
@@ -333,73 +455,6 @@ void xfDlg::MSGSlot(const QString& txt, const bool& error)
         ++_errorMsgCount;
         updateAndDisplayStatus();
     }
-}
-
-void xfDlg::import()
-{
-    xfImportDlg dlg(0);
-    if (!_data._fileName.isEmpty())
-    {
-        QFileInfo info(_data._fileName);
-        dlg.setCurrentFile(info.absolutePath());
-    }
-    connect(&dlg,SIGNAL(MSG(const QString&,const bool&)),this,SLOT(MSGSlot(const QString&,const bool&)));
-    connect(&dlg,SIGNAL(selectedTIFFile(const QString&)),this,SLOT(selectedImportFile(const QString&)));
-    dlg.exec();
-}
-
-void xfDlg::selectedImportFile(const QString& fname)
-{
-    emit MSG(QString("%1 file selected").arg(fname));
-
-    // analyse data
-    QFileInfo info(fname);
-    ui->pFileNameLEdit->setText(info.fileName());
-    _data._fileName = fname;
-
-    // check how many frames
-    _data._frames=0;
-    const char* _fileName = info.absoluteFilePath().toLatin1().constData();
-    TIFF *tif = TIFFOpen(_fileName,"r");
-    if (tif)
-    {
-        do
-        {
-          _data._frames++;
-        } while (TIFFReadDirectory(tif));
-        TIFFClose(tif);
-    }
-
-    if (QFileInfo(info.absolutePath()+"/angle.prm").exists() || QFileInfo(info.absolutePath()+"/Angle.prm").exists())
-        _data._rotation = true;
-    else
-    {
-        *_data.pTotalTime = 34.0;
-        ui->pTotalTimeLCD->display(*_data.pTotalTime);
-    }
-
-    _data._startFrame=0;
-    _data._endFrame=_data._frames-1;
-
-    ui->pFrameDial->setRange(0,_data._frames-1);
-
-    if (_data._frames<2)
-    {
-        emit MSG("Insufficient frames found.",true);
-        _data._dataValid = false;
-    }
-    else
-    {
-        _data._dataValid = true;
-        ui->pFrameDial->setValue(0);
-    }
-
-    createStandardPathItems();
-    updateAndDisplayStatus();
-
-    if (_data._rotation && !ui->pTotalAngleTB->isChecked()) ui->pTotalAngleTB->animateClick();
-    if (!_data._rotation && ui->pTotalAngleTB->isChecked()) ui->pTotalAngleTB->animateClick();
-
 }
 
 void xfDlg::updateClock()

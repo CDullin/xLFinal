@@ -102,6 +102,45 @@ void nonLinearFit(QVector <float> xvalues,QVector <float> yvalues,QVector <float
 
 }
 
+float median(QVector <float> data)
+{
+    float buffer;
+    bool changed=false;
+    do
+    {
+        changed = false;
+        for (long i=0;i<data.count()-1;++i)
+            if (data[i]>data[i+1])
+            {
+                changed=true;
+                buffer=data[i+1];
+                data[i+1]=data[i];
+                data[i]=buffer;
+            }
+
+    } while(!changed);
+
+    if (data.count()%2==0)
+        buffer = (data[data.count()/2-1]+data[data.count()/2])/2.0f;
+    else
+        buffer = data[data.count()/2];
+    return buffer;
+}
+
+QVector <float> movMedianFilter(QVector <float> values, float halfFrameWidth)
+{
+    QVector <float> res;
+    QVector <float> medianBuffer;
+    for (int i=0;i<values.count();++i)
+    {
+        medianBuffer.clear();
+        for (int j=std::max(0.0f,(float)i-halfFrameWidth);j<std::min((float)values.count(),(float)i+halfFrameWidth);++j)
+            medianBuffer.append(values.at(j));
+
+        res.append(median(medianBuffer));
+    }
+    return res;
+}
 
 QVector <float> movAvFilter(QVector <float> values, float halfFrameWidth)
 {
@@ -226,15 +265,19 @@ void getIntervals(QVector<float> values, QVector<int> &peaks, QVector<int> &inte
 {
 //    float fps = (float)_data._frames/(*_data.pTotalTime);
 //    float movFilterWidth = (*_data.pTrendCorrTimeWindowInMS)/1000.0f*fps;
-//    QVector <float> filtered = movAvFilter(values,movFilterWidth);
-    QVector <float> filtered  = values;
+    QVector <float> filtered = movAvFilter(values,5);
+
+    // get mean L
+    // min distance from peak is L*10% ?
+
+    //QVector <float> filtered  = values;
     for (int p=1;p<peaks.count();++p)       // we cut 1st end last peak
     {
         float val = filtered.at(peaks.at(p));
         bool found=false;
         for (int j=peaks.at(p);j>peaks.at(p-1) && !found;--j)
         {
-            if (val>=filtered.at(j))
+            if (val>=filtered.at(j) || (peaks.at(p)-j)<5)
             {
                 val = filtered.at(j);
             }
@@ -371,25 +414,17 @@ XLFParam generateParam(QVector <float> values,int minFrame,int maxFrame,float fp
     float sumBufferA=0.0f;
     float quadSumBufferA=0.0f;
     count=0.0f;
-    float sumBufferB=0.0f;
-    float quadSumBufferB=0.0f;
     for (int i=0;i<param._peaks.count()-1;++i)
     {
         if (i<param._intervals.count() && i<param._D.count())
         {
-            sumBufferA+=param._D.at(i)-param._intervals.at(i);
-            quadSumBufferA+=pow(param._D.at(i)-param._intervals.at(i),2.0);
-            sumBufferB+=param._intervals.at(i+1)-param._D.at(i);
-            quadSumBufferB+=pow(param._intervals.at(i+1)-param._D.at(i),2.0);
+            sumBufferA+=(float)(param._D.at(i)-param._intervals.at(i))/(float)(param._intervals.at(i+1)-param._D.at(i));
+            quadSumBufferA+=pow((float)(param._D.at(i)-param._intervals.at(i))/(float)(param._intervals.at(i+1)-param._D.at(i)),2.0);
             count++;
         }
     }
-    count>0 ? param._AnIso =sumBufferA/sumBufferB : param._AnIso = 0.0f;
-    count>0 ? param._stdAnIso = quadSumBufferA/quadSumBufferB - pow(param._AnIso,2.0) : param._stdAnIso = 0.0f;
-
-
-    // x(1)./exp(xdata.*x(2))+x(3)
-    // x(1)=0.0671, x(2)=11.1576 [tau], x(3)=0.6653
+    count>0 ? param._AnIso =sumBufferA/count : param._AnIso = 0.0f;
+    count>0 ? param._stdAnIso = quadSumBufferA/count - pow(param._AnIso,2.0) : param._stdAnIso = 0.0f;
 
     QVector <float> fvalues;
     QVector <float> xvalues;

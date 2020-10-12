@@ -17,6 +17,9 @@ public:
     ~xfImportDlg();
     void setCurrentFile(const QString&);
 
+protected:
+    bool eventFilter(QObject *, QEvent *) override;
+
 public slots:
     void show();
     void listTiffFilesInCurrentDir(const QModelIndex&);

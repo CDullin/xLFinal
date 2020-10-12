@@ -24,13 +24,13 @@
 	border-width: 3px;
 }</string>
   </property>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
      <x>15</x>
      <y>17</y>
      <width>269</width>
-     <height>272</height>
+     <height>276</height>
     </rect>
    </property>
    <layout class="QGridLayout" name="gridLayout">

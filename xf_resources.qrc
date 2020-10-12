@@ -10,7 +10,6 @@
         <file>reset_button_down.png</file>
         <file>reset_button.png</file>
         <file>settings_button.png</file>
-        <file>small_button_disabled.png</file>
         <file>small_button.png</file>
         <file>status_button.png</file>
         <file>status_error.png</file>
@@ -45,5 +44,21 @@
         <file>harmonics_explanation.png</file>
         <file>level_explanation.png</file>
         <file>detrending_explanation.png</file>
+        <file>play_button_disabled.png</file>
+        <file>rotation_angle_button_disab.png</file>
+        <file>small_button_disabled.png</file>
+    </qresource>
+    <qresource prefix="/manual">
+        <file>manual.html</file>
+        <file>manual_html_cfbed9979b20dbb8.png</file>
+        <file>manual_html_c574f05cdcccff86.png</file>
+        <file>manual_html_768fce8bfc0281cb.png</file>
+        <file>manual_html_756e24e0669ca0c2.png</file>
+        <file>manual_html_549a2ff2bcb1b0dc.png</file>
+        <file>manual_html_9ed5bb8b03ee5e6f.png</file>
+        <file>manual_html_9e17d3ab5b48c03e.png</file>
+        <file>manual_html_8ff1d3c874070a22.png</file>
+        <file>manual_html_6a4002b5fd19da9b.png</file>
+        <file>manual_html_e18fc4ac4d48d393.png</file>
     </qresource>
 </RCC>

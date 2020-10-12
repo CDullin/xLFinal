@@ -5,7 +5,7 @@
 #include <QListWidgetItem>
 #include <QScrollBar>
 #include <QFileIconProvider>
-
+#include <QKeyEvent>
 
 class xfFileIconProvider:public QFileIconProvider
 {
@@ -72,9 +72,22 @@ xfImportDlg::xfImportDlg(QWidget *parent) :
        ));
 
     ui->pFileListWdgt->verticalScrollBar()->setStyleSheet(ui->pDirTreeWdgt->verticalScrollBar()->styleSheet());
+    ui->pFileListWdgt->installEventFilter(this);
 
     connect(ui->pDirTreeWdgt,SIGNAL(activated(const QModelIndex &)),this,SLOT(listTiffFilesInCurrentDir(const QModelIndex&)));
     connect(ui->pFileListWdgt,SIGNAL(itemPressed(QListWidgetItem *)),this,SLOT(itemActivated(QListWidgetItem *)));
+    connect(ui->pFileListWdgt,SIGNAL(itemDoubleClicked(QListWidgetItem *)),ui->pImportTB,SLOT(animateClick()));
+}
+
+bool xfImportDlg::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched==ui->pFileListWdgt && event->type()==QEvent::KeyPress)
+    {
+        QKeyEvent *pKEvent = dynamic_cast<QKeyEvent*>(event);
+        if (pKEvent && (pKEvent->key()==Qt::Key_Enter || pKEvent->key()==Qt::Key_Return))
+            ui->pImportTB->animateClick();
+    }
+    return QDialog::eventFilter(watched,event);
 }
 
 xfImportDlg::~xfImportDlg()
@@ -87,7 +100,7 @@ void xfImportDlg::setCurrentFile(const QString &fname)
     QFileSystemModel *model = dynamic_cast<QFileSystemModel*>(ui->pDirTreeWdgt->model());
     ui->pDirTreeWdgt->expand(model->index(fname));
     ui->pDirTreeWdgt->setCurrentIndex(model->index(fname));
-    ui->pDirTreeWdgt->scrollTo(model->index(fname));
+    ui->pDirTreeWdgt->scrollTo(ui->pDirTreeWdgt->currentIndex(),QAbstractItemView::PositionAtCenter);
 }
 
 void xfImportDlg::listTiffFilesInCurrentDir(const QModelIndex& index)
@@ -110,9 +123,9 @@ void xfImportDlg::listTiffFilesInCurrentDir(const QModelIndex& index)
             ui->pFileListWdgt->addItem(pItem);
         }
     }
-
+    ui->pFileListWdgt->setFocus();
+    if (ui->pFileListWdgt->count()>0) ui->pFileListWdgt->item(0)->setSelected(true);
     ui->pImportTB->setEnabled(ui->pFileListWdgt->selectedItems().count()>0);
-
 }
 
 void xfImportDlg::accept()

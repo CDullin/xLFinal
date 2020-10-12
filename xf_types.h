@@ -4,8 +4,15 @@
 #include <QVector>
 #include <QString>
 
-struct XLFParam
+#include <QtCharts/QLineSeries>
+#include <QtCharts/QScatterSeries>
+#include <QtCharts/QChart>
+
+using namespace QtCharts;
+
+class XLFParam
 {
+public:
     float _valid;                   // an error has occured during calculation
     float _count;                   // counts of breathing events minus first and last one
     float _avL,_stdL;               // breathing length and std
@@ -19,6 +26,32 @@ struct XLFParam
     float _cutOff;                  // level function
     // only for display
     QVector <int> _peaks,_intervals,_D;
+    // Series for display
+    QLineSeries     *pLSeries       = nullptr;
+    QLineSeries     *pOrgData       = nullptr;
+    QScatterSeries  *pIntervals     = nullptr;
+    QScatterSeries  *pPeaks         = nullptr;
+    QScatterSeries  *pDSeries       = nullptr;
+    QLineSeries     *pCutOffLine    = nullptr;
+
+    XLFParam(){};
+    void setVisible(bool b)
+    {
+        pLSeries->setVisible(b);
+        pIntervals->setVisible(b);
+        pPeaks->setVisible(b);
+        pDSeries->setVisible(b);
+        pCutOffLine->setVisible(b);
+    };
+
+    void addToChart(QChart* pChart)
+    {
+        pChart->addSeries(pCutOffLine);
+        pChart->addSeries(pLSeries);
+        pChart->addSeries(pPeaks);
+        pChart->addSeries(pIntervals);
+        pChart->addSeries(pDSeries);
+    }
 };
 
 struct DataContainer
@@ -39,7 +72,6 @@ public:
 
     float *pHarmonics = nullptr;
     float *pTrendCorrTimeWindowInMS = nullptr;
-    float *pPeakCorrTimeWindowInMS = nullptr;
     float *pLevelInPercent = nullptr;
 
     DataContainer()
@@ -49,7 +81,6 @@ public:
         pRotationAngle = new float(360);
         pHarmonics = new float(10);
         pTrendCorrTimeWindowInMS = new float(1000);
-        pPeakCorrTimeWindowInMS = new float(100);
         pLevelInPercent = new float(40);
     };
 };

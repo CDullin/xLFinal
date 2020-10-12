@@ -681,6 +681,18 @@ QListWidget::item:selected {
      min-width: 10em;
      padding: 0px;
  }
+QToolButton:!enabled{
+background-color: qlineargradient(spread:pad, x1:0.246175, y1:0.255, x2:1, y2:0.966, stop:0 rgba(100, 100, 100, 255), stop:1 rgba(255, 255, 255, 255));
+     border-width: 3px;
+     border-style: inset;
+     border-radius: 15px;
+     border-color: #777;
+     font: bold 16px;
+ 	 color: #777;
+    min-width: 10em;
+     padding: 0px;
+ } 
+
  QToolButton:pressed {
      background-color: #555;
      border-width: 3px;
@@ -790,6 +802,18 @@ QListWidget::item:selected {
      min-width: 10em;
      padding: 0px;
  }
+QToolButton:!enabled{
+background-color: qlineargradient(spread:pad, x1:0.246175, y1:0.255, x2:1, y2:0.966, stop:0 rgba(100, 100, 100, 255), stop:1 rgba(255, 255, 255, 255));
+     border-width: 3px;
+     border-style: inset;
+     border-radius: 15px;
+     border-color: #777;
+     font: bold 16px;
+ 	 color: #777;
+    min-width: 10em;
+     padding: 0px;
+ } 
+
  QToolButton:pressed {
      background-color: #555;
      border-width: 3px;

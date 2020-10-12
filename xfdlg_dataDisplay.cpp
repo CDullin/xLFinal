@@ -165,7 +165,6 @@ void xfDlg::displayFrame(int frameNr)
         p3DFrameItem->setPen(pen);
         p3DFrameItem->setFlag(QGraphicsItem::ItemIsMovable,true);
         QPixmap button(":/images/small_button.png");
-        //button=button.scaledToWidth(15);
         if (!pCornerPixmapItem) pCornerPixmapItem = new xf3DFrameCornerItem(button,p3DFrameItem,this);
         p3DFrameItem->moveBy(pix.width()/2-50,pix.height()/2-30);
         p3DFrameItem->setZValue(10);

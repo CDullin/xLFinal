@@ -5,6 +5,7 @@
 #include "xf_types.h"
 
 void getIntervals(QVector<float> values, QVector<int> &peaks, QVector<int> &interval, float fps,float movFilterWidth);
+QVector <float> movMedianFilter(QVector <float> values, float halfFrameWidth);
 QVector <float> movAvFilter(QVector <float> values, float halfFrameWidth);
 QVector <float> adaptiveMovAvFilter(QVector <float> values, float halfFrameWidth);
 void findMaxPositions(QVector<float> values, QVector<int> &_peaks,int minFrame,int maxFrame, float lvl);

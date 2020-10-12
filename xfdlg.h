@@ -76,6 +76,8 @@ public:
     xfDlg(QWidget *parent = nullptr);
     ~xfDlg();
 
+    void reject() override;
+
 public slots:
     void MSGSlot(const QString& txt,const bool& error=false);
 
@@ -83,7 +85,9 @@ protected:
     bool eventFilter(QObject *, QEvent *) override;
     void updateAndDisplayStatus();
     QImage readTIFFrame(int);
+    void saveMultiFrameTIFF();
     void createStandardPathItems();
+    void createVisualizationFor2DResults(XLFParam&,const QVector <float>& data, float fps,float& _minValue,float &_maxValue);
 
 protected slots:
     void updateClock();
@@ -127,11 +131,6 @@ private:
     QGraphicsSimpleTextItem* pResultTxtItem = nullptr;
     QTimer *pPlayTimer = nullptr;
     QChart* pChart = nullptr;
-
-    QLineSeries *_bLSeries,*_bRSeries,*_bBSeries;
-    QScatterSeries *pLIntervals,*pRIntervals,*pBIntervals;
-    QScatterSeries *pLPeaks,*pRPeaks,*pBPeaks;
-    QScatterSeries *pLDSeries,*pRDSeries,*pBDSeries;
-    QLineSeries *_cutOffLineL,*_cutOffLineR,*_cutOffLineB;
+    QString _lastFileName = "";
 };
 #endif // XFDLG_H

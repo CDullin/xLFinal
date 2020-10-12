@@ -41,6 +41,7 @@ SOURCES += \
     xfinsertnrdlg.cpp \
     xfmsgdlg.cpp \
     xfprogressdlg.cpp \
+    xfquestiondlg.cpp \
     xlflunglobevisualization.cpp
 
 HEADERS += \
@@ -66,6 +67,7 @@ HEADERS += \
     xfinsertnrdlg.h \
     xfmsgdlg.h \
     xfprogressdlg.h \
+    xfquestiondlg.h \
     xlflunglobevisualization.h
 
 FORMS += \
@@ -73,7 +75,8 @@ FORMS += \
     xfimportdlg.ui \
     xfinsertnrdlg.ui \
     xfmsgdlg.ui \
-    xfprogressdlg.ui
+    xfprogressdlg.ui \
+    xfquestiondlg.ui
 
 TRANSLATIONS += \
     xLFinal_en_US.ts

@@ -34,8 +34,8 @@ void xfDlg::calculate3DXLF()
     int _minFrame = _data._startFrame;
     int _maxFrame = _data._endFrame;
 
-    QLineSeries *_oData = new QLineSeries();
-    QLineSeries *_oData2 = new QLineSeries();
+    _data._both.pLSeries = new QLineSeries();
+    _data._both.pOrgData = new QLineSeries();
     float fps = (float)_data._frames / (*_data.pTotalTime);
 
     float _maxValue = 0;
@@ -194,17 +194,17 @@ void xfDlg::calculate3DXLF()
     float val;
     for (long t=0;t<_data._frames;++t)
     {
-        _oData->append(_data._angles[t],_avBoth.at(t)/_maxValue);
+        _data._both.pOrgData->append(_data._angles[t],_avBoth.at(t)/_maxValue);
 
         val = ((_avBoth.at(t)-abscomplex(x[t]))-_minBackProj)/(_maxBackProj-_minBackProj);
         //val = (abscomplex(x[t])-_minBackProj)/(_maxBackProj-_minBackProj);
 
         _minusBackground << val;
-        _oData2->append(_data._angles[t],val);
+        _data._both.pLSeries->append(_data._angles[t],val);
     }
 
-    // 20-340°
     QVector <int> _bPeaks;
+
     findMaxPositions(_minusBackground,_bPeaks,_minFrame,_maxFrame,(*_data.pLevelInPercent));
 
     QVector<QVector<float>> _intervals;
@@ -259,26 +259,26 @@ void xfDlg::calculate3DXLF()
     }
 
     // generate interval series
-    QScatterSeries *pIntervals = new QScatterSeries();
-    pIntervals->setName("intervals");
-    pIntervals->setPen(QPen(Qt::black));
-    pIntervals->setBrush(QBrush(Qt::blue));
-    pIntervals->setMarkerSize(5);
+    _data._both.pIntervals = new QScatterSeries();
+    _data._both.pIntervals->setName("intervals");
+    _data._both.pIntervals->setPen(QPen(Qt::black));
+    _data._both.pIntervals->setBrush(QBrush(Qt::blue));
+    _data._both.pIntervals->setMarkerSize(5);
     for (int i=0;i<_intervals.count();++i)
     {
-        pIntervals->append(_intervals.at(i)[0],_minusBackground[_intervals.at(i)[3]]);
-        pIntervals->append(_intervals.at(i)[1],_minusBackground[_intervals.at(i)[4]]);
+        _data._both.pIntervals->append(_intervals.at(i)[0],_minusBackground[_intervals.at(i)[3]]);
+        _data._both.pIntervals->append(_intervals.at(i)[1],_minusBackground[_intervals.at(i)[4]]);
     }
     //_data._both = generateParam(_minusBackground,_minFrame,_maxFrame);
 
-    QScatterSeries *pPeaks= new QScatterSeries();
-    pPeaks->setName("peaks");
-    pPeaks->setPen(QPen(Qt::black));
-    pPeaks->setBrush(QBrush(Qt::red));
-    pPeaks->setMarkerSize(5);
+    _data._both.pPeaks= new QScatterSeries();
+    _data._both.pPeaks->setName("peaks");
+    _data._both.pPeaks->setPen(QPen(Qt::black));
+    _data._both.pPeaks->setBrush(QBrush(Qt::red));
+    _data._both.pPeaks->setMarkerSize(5);
 
     for (unsigned long i=0;i<_bPeaks.count();++i)
-        pPeaks->append(_data._angles.at(_bPeaks.at(i)),_minusBackground.at(_bPeaks.at(i)));
+        _data._both.pPeaks->append(_data._angles.at(_bPeaks.at(i)),_minusBackground.at(_bPeaks.at(i)));
 
     // calculate L and stdL
     QVector <double> _sum(4,0);
@@ -322,11 +322,10 @@ void xfDlg::calculate3DXLF()
         ui->pDataGV->scene()->removeItem(pChart);
     }
 
-    QLineSeries *pLevel=new QLineSeries();
-    pLevel->setPen(QPen(Qt::red));
-    pLevel->setName("level");
+    _data._both.pCutOffLine=new QLineSeries();
+    _data._both.pCutOffLine->setName("level");
     for (int i=0;i<37;++i)
-        pLevel->append(i*10,_level);
+        _data._both.pCutOffLine->append(i*10,_level);
 
     QLineSeries *pDataRegion = new QLineSeries();
     QLineSeries *pDataRegionLow = new QLineSeries();
@@ -352,15 +351,33 @@ void xfDlg::calculate3DXLF()
     pAreaSeries->setBrush(QBrush(QColor(100,100,100,33)));
     pAreaSeries->setPen(QPen(Qt::gray));
 
+    _data._both.pLSeries->setPen(QPen(Qt::black));
+    QPen pmarker(Qt::white);
+    pmarker.setWidthF(2);
+    QPen pline(Qt::darkGray);
+    pline.setStyle(Qt::DashDotLine);
+    pline.setWidthF(2);
+    int markerSize = 13;
+
+    _data._both.pOrgData->setPen(QPen(Qt::darkGray));
+    _data._both.pCutOffLine->setPen(pline);
+    _data._both.pPeaks->setPen(pmarker);
+    _data._both.pPeaks->setBrush(QBrush(Qt::black));
+    _data._both.pPeaks->setMarkerSize(markerSize);
+    _data._both.pIntervals->setPen(pmarker);
+    _data._both.pIntervals->setBrush(QBrush(Qt::lightGray));
+    _data._both.pIntervals->setMarkerShape(QScatterSeries::MarkerShapeRectangle);
+    _data._both.pIntervals->setMarkerSize(markerSize/2);
+
     QPolarChart *pPolChart=new QPolarChart();
-    pPolChart->addSeries(_oData);
+    pPolChart->addSeries(_data._both.pOrgData);
     pPolChart->addSeries(pAreaSeries);
-    _oData->setName("raw data");
-    pPolChart->addSeries(_oData2);
-    _oData2->setName("filtered breathing events");
-    pPolChart->addSeries(pLevel);
-    pPolChart->addSeries(pPeaks);
-    pPolChart->addSeries(pIntervals);
+    _data._both.pOrgData->setName("raw data");
+    pPolChart->addSeries(_data._both.pLSeries);
+    _data._both.pLSeries->setName("filtered breathing events");
+    pPolChart->addSeries(_data._both.pCutOffLine);
+    pPolChart->addSeries(_data._both.pPeaks);
+    pPolChart->addSeries(_data._both.pIntervals);
     pPolChart->legend()->setVisible(false);
     QValueAxis *angularAxis = new QValueAxis();
     angularAxis->setRange(0, 360);
@@ -368,29 +385,29 @@ void xfDlg::calculate3DXLF()
     angularAxis->setTickInterval(20);
     QValueAxis *radialAxis = new QValueAxis();
     radialAxis->setLabelFormat("%.2f");
-    radialAxis->setMax(1.0);
+    radialAxis->setMax(1.1);
     radialAxis->setMin(0.0);
     pPolChart->addAxis(radialAxis, QPolarChart::PolarOrientationRadial);
     pPolChart->addAxis(angularAxis, QPolarChart::PolarOrientationAngular);
-    _oData->attachAxis(angularAxis);
-    _oData->attachAxis(radialAxis);
-    _oData2->attachAxis(angularAxis);
-    _oData2->attachAxis(radialAxis);
-    pLevel->attachAxis(angularAxis);
-    pLevel->attachAxis(radialAxis);
-    pPeaks->attachAxis(angularAxis);
-    pPeaks->attachAxis(radialAxis);
+    _data._both.pLSeries->attachAxis(angularAxis);
+    _data._both.pLSeries->attachAxis(radialAxis);
+    _data._both.pOrgData->attachAxis(angularAxis);
+    _data._both.pOrgData->attachAxis(radialAxis);
+    _data._both.pCutOffLine->attachAxis(angularAxis);
+    _data._both.pCutOffLine->attachAxis(radialAxis);
+    _data._both.pPeaks->attachAxis(angularAxis);
+    _data._both.pPeaks->attachAxis(radialAxis);
     pAreaSeries->attachAxis(angularAxis);
     pAreaSeries->attachAxis(radialAxis);
-    pIntervals->attachAxis(angularAxis);
-    pIntervals->attachAxis(radialAxis);
+    _data._both.pIntervals->attachAxis(angularAxis);
+    _data._both.pIntervals->attachAxis(radialAxis);
     pPolChart->setAnimationOptions(QChart::SeriesAnimations);
     pPolChart->legend()->setEnabled(false);
 
     pPolChart->setBackgroundBrush(QBrush(Qt::NoBrush));
     pPolChart->setSizePolicy(QSizePolicy(QSizePolicy::MinimumExpanding,QSizePolicy::MinimumExpanding));
-    pPolChart->setMinimumSize(ui->pDataGV->height()-20,ui->pDataGV->height()-20);
-    ui->pDataGV->scene()->setSceneRect(0,0,ui->pDataGV->width()-20,ui->pDataGV->height()-20);
+    pPolChart->setMinimumSize(ui->pDataGV->height(),ui->pDataGV->height());
+    ui->pDataGV->scene()->setSceneRect(0,0,ui->pDataGV->width()-20,ui->pDataGV->height());
     pChart = pPolChart;
     ui->pDataGV->scene()->addItem(pChart);
     ui->pTabWdgt->setCurrentIndex(1);
@@ -403,20 +420,23 @@ void xfDlg::calculate3DXLF()
 
     QString txt;
     txt+=ui->pFileNameLEdit->text()+"\n";
-    txt+=QString("total time [s] = \t\t%1\n").arg(*_data.pTotalTime);
-    if (_data._rotation) txt+=QString("rotation angle [°] = \t\t%1\n").arg(*_data.pRotationAngle);
-    txt+=QString("body mass [g] = \t\t%1\n\n").arg(*_data.pBodyMass,0,'f',1);
+    txt+=QString("total time [s] = \t%1\n").arg(*_data.pTotalTime);
+    if (_data._rotation) txt+=QString("rotation angle [°] = \t%1\n").arg(*_data.pRotationAngle);
+    txt+=QString("body mass [g] = \t%1\n\n").arg(*_data.pBodyMass,0,'f',1);
 
-    txt+=QString("breathing events = \t\t%1\n").arg(_intervals.count());
-    txt+=QString("av. rate [s] = \t\t%1 ± %2\n").arg(_sum[0]*_timePerAngle,0,'f',3).arg(_quadSum[0]*_timePerAngle,0,'f',3);
-    txt+=QString("av. duration [s] = \t\t%1 ± %2\n").arg(_sum[3]*_timePerAngle,0,'f',3).arg(_quadSum[3]*_timePerAngle,0,'f',3);
-    txt+=QString("inspiration time [s] = \t%1 ± %2\n").arg(_sum[1]*_timePerAngle,0,'f',3).arg(_quadSum[1]*_timePerAngle,0,'f',3);
-    txt+=QString("isotrophy index = \t\t%1 ± %2\n").arg(_sum[2],0,'f',3).arg(_quadSum[2],0,'f',3);
-    _data._heartRateInBPM!=-1 ? txt+=QString("\nheart rate [bpm] = \t\t%1\n").arg(_data._heartRateInBPM,0,'f',3) : txt+=QString("\nheart rate [bpm] = NaN\n");
+    txt+=QString("# = \t%1\n").arg(_intervals.count());
+    txt+=QString("br [s] = \t%1 ± %2\n").arg(_sum[0]*_timePerAngle,0,'f',3).arg(_quadSum[0]*_timePerAngle,0,'f',3);
+    txt+=QString("du [s] = \t%1 ± %2\n").arg(_sum[3]*_timePerAngle,0,'f',3).arg(_quadSum[3]*_timePerAngle,0,'f',3);
+    txt+=QString("in [s] = \t%1 ± %2\n").arg(_sum[1]*_timePerAngle,0,'f',3).arg(_quadSum[1]*_timePerAngle,0,'f',3);
+    txt+=QString("iso = \t%1 ± %2\n").arg(_sum[2],0,'f',3).arg(_quadSum[2],0,'f',3);
+    _data._heartRateInBPM!=-1 ?
+    txt+=QString("\nhr [bpm] = %1\n").arg(_data._heartRateInBPM,0,'f',3) : txt+=QString("\nhr [bpm] = NaN\n");
 
-    pResultTxtItem->setFont(font());
+    QFont f=font();
+    f.setPixelSize(19);
+    pResultTxtItem->setFont(f);
     pResultTxtItem->setPen(QPen(Qt::black));
-    pResultTxtItem->setPos(ui->pDataGV->height()-20,20);
+    pResultTxtItem->setPos(ui->pDataGV->height()+90,80);
     pResultTxtItem->setText(txt);
     updateAndDisplayStatus();
 }
