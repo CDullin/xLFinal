@@ -292,7 +292,7 @@ void xfDlg::calculate2DXLF()
     txt+=ui->pFileNameLEdit->text()+"\t";
     txt+=QString("total time=%1s    ").arg(*_data.pTotalTime);
     txt+=QString("body mass=%1g\n").arg(*_data.pBodyMass,0,'f',1);
-    txt += "region\t#\tbr[s]\tin[s]\tiso\taniso\n\t\tEIV\tAT\ttau[1/s]\thr[bpm]\n";
+    txt += "region\t#\tbr[s]\tin[s]\tiso\taniso\n\t\tTflow[au*s]\tAT\ttau[1/s]\thr[bpm]\n";
 
     // update table
     XLFParam *pParam;

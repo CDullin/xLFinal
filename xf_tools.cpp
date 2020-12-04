@@ -3,6 +3,7 @@
 #include <math.h>
 #include <QMessageBox>
 #include <QObject>
+#include <QTextStream>
 #include "../../3rd_party/Alglib/cpp/src/stdafx.h"
 #include "../../3rd_party/Alglib/cpp/src/interpolation.h"
 
@@ -202,8 +203,12 @@ void findMaxPositions(QVector<float> values, QVector<int> &_peaks,int minFrame,i
         {
             if (values.at(i)>_lvl && values.at(i-1)<_lvl)
             {
-                _startPntFound=true;
-                _region.clear();
+                // check if start point to close at previous max
+                if (_peaks.count()==0 || (i-_peaks.last())>5)
+                {
+                    _startPntFound=true;
+                    _region.clear();
+                }
             }
             if (_startPntFound) _region.append(i);
             if (values.at(i)>_lvl && values.at(i+1)<_lvl && _startPntFound)
@@ -223,6 +228,23 @@ void findMaxPositions(QVector<float> values, QVector<int> &_peaks,int minFrame,i
             }
         }
     }
+}
+
+float mean(QVector <float> values)
+{
+    double sumBuffer=0;
+    for (int i=0;i<values.count();++i)
+        sumBuffer+=values[i];
+    return sumBuffer/(float)values.count();
+}
+
+float stdev(QVector <float> values)
+{
+    float mu=mean(values);
+    double sumBuffer=0;
+    for (int i=0;i<values.count();++i)
+        sumBuffer+=pow(values[i]-mu,2.0);
+    return sumBuffer/(float)values.count();
 }
 
 void getMeanAndStd(QVector<int> pos, float &mean, float &std, const int min, const int max)
@@ -297,6 +319,7 @@ XLFParam generateParam(QVector <float> values,int minFrame,int maxFrame,float fp
     float lvl = (*_data.pLevelInPercent);
     int _width = (*_data.pMinIntervalLengthInMS)/1000.f*fps;
 */
+
     XLFParam param;
     param._valid = true;
     findMaxPositions(values,param._peaks,minFrame,maxFrame,lvl);
@@ -339,92 +362,69 @@ XLFParam generateParam(QVector <float> values,int minFrame,int maxFrame,float fp
         }
     }
 
-    float sumBuffer=0.0f;
-    float quadSumBuffer=0.0f;
-    float count=0.0f;
+    QVector <float> _val;
     for (int i=0;i<param._intervals.count()-1;++i)
     {
-        float iBuffer=0.0f;
         if (i<param._D.count())
         {
-            for (int j=param._intervals.at(i)+1;j<param._D.at(i);++j)
+            float iBuffer=0.0f;
+            float iCount=0;
+            for (int j=param._intervals.at(i);j<param._D.at(i);++j)
             {
-                iBuffer+=values.at(j)-values.at(param._intervals.at(i));
+                iBuffer+=values.at(j);
+                ++iCount;
             }
-            sumBuffer+=iBuffer;
-            quadSumBuffer+=pow(iBuffer,2.0);
-            count++;
+            _val.append(iBuffer*fps/iCount);
         }
     }
-    count>0 ? param._TV =sumBuffer/count : param._TV=0;
-    count>0 ? param._stdTV = quadSumBuffer/count - pow(param._TV,2.0) : param._stdTV = 0.0f;
+    param._TV=mean(_val);
+    param._stdTV=stdev(_val);
 
-    param._TV/=fps;
-    param._stdTV/=fps;
-
-    sumBuffer=0.0f;
-    quadSumBuffer=0.0f;
-    count=0.0f;
+    _val.clear();
     for (int i=0;i<param._intervals.count()-1;++i)
     {
         float iBuffer=0.0f;
-        float iCount=0.0f;
         if (i<param._D.count())
         {
+            iBuffer=0;
+            float iCount=0.0f;
             for (int j=param._D.at(i);j<param._intervals.at(i+1);++j)
             {
                 iBuffer+=values.at(j);
                 iCount++;
             }
-            iCount>0 ? sumBuffer+=iBuffer/iCount : sumBuffer+=0.0f;
-            quadSumBuffer+=pow(iBuffer/iCount,2.0);
-            count++;
+            _val.append(iBuffer/iCount);
         }
     }
-    count>0 ? param._ATrp =sumBuffer/count : param._ATrp = 0.0f;
-    count>0 ? param._stdATrp = quadSumBuffer/count - pow(param._ATrp,2.0) : param._stdATrp = 0.0f;
-
-    param._ATrp/=fps;
-    param._stdATrp/=fps;
+    param._ATrp = mean(_val);
+    param._stdATrp = stdev(_val);
 
     getMeanAndStd(param._peaks,param._avL,param._stdL);
     param._avL/=fps;
     param._stdL/=fps;
 
-    sumBuffer=0.0f;
-    quadSumBuffer=0.0f;
-    count=0.0f;
+    _val.clear();
     for (int i=0;i<param._peaks.count()-1;++i)
     {
         if (i<param._intervals.count())
-        {
-            sumBuffer+=param._peaks.at(i)-param._intervals.at(i);
-            quadSumBuffer+=pow(param._peaks.at(i)-param._intervals.at(i),2.0);
-            count++;
-        }
+            _val.append(param._peaks.at(i)-param._intervals.at(i));
     }
-    count>0 ? param._tin =sumBuffer/count : param._tin = 0.0f;
-    count>0 ? param._stdtin = quadSumBuffer/count - pow(param._tin,2.0) : param._stdtin = 0.0f;
+    param._tin = mean(_val);
+    param._stdtin = stdev(_val);
     param._tin/=fps;
     param._stdtin/=fps;
 
     param._Iso = param._tin / param._avL;
     param._stdIso = 1.0/param._avL*param._stdL+fabs(param._tin/pow(param._avL,2.0))*param._stdL;
 
-    float sumBufferA=0.0f;
-    float quadSumBufferA=0.0f;
-    count=0.0f;
+    _val.clear();
     for (int i=0;i<param._peaks.count()-1;++i)
     {
         if (i<param._intervals.count() && i<param._D.count())
-        {
-            sumBufferA+=(float)(param._D.at(i)-param._intervals.at(i))/(float)(param._intervals.at(i+1)-param._D.at(i));
-            quadSumBufferA+=pow((float)(param._D.at(i)-param._intervals.at(i))/(float)(param._intervals.at(i+1)-param._D.at(i)),2.0);
-            count++;
-        }
+            _val.append((float)(param._D.at(i)-param._intervals.at(i))/(float)(param._intervals.at(i+1)-param._D.at(i)));
     }
-    count>0 ? param._AnIso =sumBufferA/count : param._AnIso = 0.0f;
-    count>0 ? param._stdAnIso = quadSumBufferA/count - pow(param._AnIso,2.0) : param._stdAnIso = 0.0f;
+    param._AnIso = mean(_val);
+    param._stdAnIso = stdev(_val);
 
     QVector <float> fvalues;
     QVector <float> xvalues;

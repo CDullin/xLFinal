@@ -101,8 +101,8 @@ void xfDlg::exportResults()
                 _append.append(lst.at(0));
                 _append.append(QString("region,#,breathing rate {s},std_breathing rate,insp. time {s},"
                                        "std_insp. time,isotrophy index,std_isotrophy index,anisotrophy index,"
-                                       "std_anisotrophy index,end inspiratory volume,std_end inspiratory volume,"
-                                       "end expiratory volume,std_end expiratory volume,decay rate {Hz},R^2,"
+                                       "std_anisotrophy index,tidal flow,std_tidal flow,"
+                                       "baseline,std_baseline,decay rate {Hz},R^2,"
                                        "heart rate {bpm},std_heart rate"));
                 for (int i=3;i<lst.count()-1;i=i+2)
                     _append.append((lst.at(i)+lst.at(i+1)));
@@ -294,6 +294,7 @@ void xfDlg::import()
     connect(&dlg,SIGNAL(selectedTIFFile(const QString&)),this,SLOT(selectedImportFile(const QString&)));
     if (dlg.exec()==QDialog::Accepted)
     {
+        _lastFileName=_data._fileName;
         xfMSGDlg dlg("Please set correct aquistion time and rotation angle!");
         dlg.exec();
     }
