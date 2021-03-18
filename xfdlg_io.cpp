@@ -10,6 +10,7 @@
 #include <QTextStream>
 #include <QDateEdit>
 #include <QFileInfo>
+#include <stdlib.h>
 
 using namespace std;
 
@@ -20,13 +21,13 @@ void xfDlg::saveSettings()
     {
         QTextStream t(&f);
 
-        t << _data._fileName << Qt::endl;
-        t << (*_data.pTotalTime) << Qt::endl;
-        t << (*_data.pRotationAngle) << Qt::endl;
-        t << (*_data.pBodyMass) << Qt::endl;
-        t << (*_data.pLevelInPercent) << Qt::endl;
-        t << (*_data.pHarmonics) << Qt::endl;
-        t << (*_data.pTrendCorrTimeWindowInMS) << Qt::endl;
+        t << _data._fileName << endl;
+        t << (*_data.pTotalTime) << endl;
+        t << (*_data.pRotationAngle) << endl;
+        t << (*_data.pBodyMass) << endl;
+        t << (*_data.pLevelInPercent) << endl;
+        t << (*_data.pHarmonics) << endl;
+        t << (*_data.pTrendCorrTimeWindowInMS) << endl;
 
         f.close();
     }
@@ -91,7 +92,7 @@ void xfDlg::exportResults()
                     s.remove(QChar('\t'));
                     s.replace(" = ",",");
                     s.replace(" ± ",",");
-                    t << s << Qt::endl;
+                    t << s << endl;
                 }
             }
             else
@@ -115,7 +116,7 @@ void xfDlg::exportResults()
                     s.replace(" [",",");
                     s.remove("]");
                     s.replace(" ± ",",");
-                    t << s << Qt::endl;
+                    t << s << endl;
                 }
             }
 
@@ -181,7 +182,7 @@ void xfDlg::saveMultiFrameTIFF()
             if (_data._both.pLSeries->at(i).y()<_level)
             {
                 // save angle
-                t << (*_data.pRotationAngle)/(float)_data._frames*(float)i/180.0f*M_PI << Qt::endl;
+                t << (*_data.pRotationAngle)/(float)_data._frames*(float)i/180.0f*M_PI << endl;
 
                 TIFFSetField(tif, TIFFTAG_PAGENUMBER, j, j);
                 TIFFSetField(tif, TIFFTAG_SUBFILETYPE, FILETYPE_PAGE);
