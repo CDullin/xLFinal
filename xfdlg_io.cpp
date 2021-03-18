@@ -250,7 +250,8 @@ QImage xfDlg::readTIFFrame(int frameNr)
         TIFFGetField(tif,TIFFTAG_XRESOLUTION,&pixInX);
         TIFFGetField(tif,TIFFTAG_RESOLUTIONUNIT,&resUnit);
 
-        quint16* pBuffer=(uint16*)_TIFFmalloc(imageWidth*imageLength*sizeof(uint16));
+        quint16* pBuffer=(quint16*)_TIFFmalloc(imageWidth*imageLength*sizeof(quint16));
+        quint8* pU8Buffer=(quint8*)_TIFFmalloc(imageWidth*imageLength);
         offset = (uint64)pBuffer;
         buf = _TIFFmalloc(TIFFScanlineSize(tif));
         for (row = 0; row < imageLength; row++)
@@ -271,10 +272,11 @@ QImage xfDlg::readTIFFrame(int frameNr)
         }
 
         for (int i=0;i<size;++i)
-            pBuffer[i]=(float)(pBuffer[i]-_minVal)*65535.0f/(float)(_maxVal-_minVal);
+            pU8Buffer[i]=(float)(pBuffer[i]-_minVal)*255.0f/(float)(_maxVal-_minVal);
+        _TIFFfree(pBuffer);
 
         // cleanup function
-        img = QImage((uchar*)pBuffer,imageWidth,imageLength,imageLength*2,QImage::Format_Grayscale16,myImageCleanupHandler);
+        img = QImage((uchar*)pU8Buffer,imageWidth,imageLength,imageWidth,QImage::Format_Grayscale8,myImageCleanupHandler);
 
         TIFFClose(tif);
     }

@@ -148,16 +148,16 @@ QPixmap xfDlg::generateDisplayPixmap(QImage img)
     QImage cpy=img;
     float val;
 
-    float _center = 65535.0f/2.0f/_level;
-    float _br = 65535.0f/_window;
+    float _center = 255.0f/2.0f/_level;
+    float _br = 255.0f/_window;
     float _min = _center - _br/2.0;
     float _max = _center + _br/2.0;
 
     for (long x=0;x<img.width();++x)
         for (long y=0;y<img.height();++y)
         {
-            val=((quint16*)img.scanLine(y))[x];
-            ((quint16*)cpy.scanLine(y))[x]=max(0.0f,min(65535.0f,(val-_min)*65535.0f/(_max-_min)));
+            val=((quint8*)img.scanLine(y))[x];
+            ((quint8*)cpy.scanLine(y))[x]=max(0.0f,min(255.0f,(val-_min)*255.0f/(_max-_min)));
         }
     return QPixmap::fromImage(cpy);
 }
@@ -171,6 +171,7 @@ void xfDlg::displayFrame(int frameNr)
         ui->pGV->scene()->addItem(pPixItem);
     }
     QPixmap pix = generateDisplayPixmap(readTIFFrame(frameNr));
+    //QPixmap pix = QPixmap::fromImage(readTIFFrame(frameNr));
     // overlay info painter
     pPixItem->setPixmap(pix);
     float scale = min((float)pix.width()/(float)ui->pGV->width(),(float)pix.height()/float(ui->pGV->height()))*0.9;
