@@ -29,6 +29,7 @@ public slots:
 signals:
     void MSG(const QString& txt,const bool& error=false);
     void selectedTIFFile(const QString&);
+    void selectedCSVFile(const QString&);
 
 private:
     Ui::xfImportDlg *ui;

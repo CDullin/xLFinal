@@ -648,7 +648,7 @@ QListWidget::item:selected {
            <string/>
           </property>
           <property name="pixmap">
-           <pixmap resource="xf_resources.qrc">:/images/emergency_button.png</pixmap>
+           <pixmap resource="../xWatch/xWatch_resources.qrc">:/images/emergency_button.png</pixmap>
           </property>
           <property name="scaledContents">
            <bool>true</bool>
@@ -769,7 +769,7 @@ background-color: qlineargradient(spread:pad, x1:0.246175, y1:0.255, x2:1, y2:0.
            <string/>
           </property>
           <property name="pixmap">
-           <pixmap resource="xf_resources.qrc">:/images/load_button.png</pixmap>
+           <pixmap resource="../xWatch/xWatch_resources.qrc">:/images/load_button.png</pixmap>
           </property>
           <property name="scaledContents">
            <bool>true</bool>
@@ -862,9 +862,7 @@ background-color: qlineargradient(spread:pad, x1:0.246175, y1:0.255, x2:1, y2:0.
    </layout>
   </widget>
  </widget>
- <resources>
-  <include location="xf_resources.qrc"/>
- </resources>
+ <resources/>
  <connections>
   <connection>
    <sender>pImportTB</sender>

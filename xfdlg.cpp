@@ -58,6 +58,8 @@ xfDlg::xfDlg(QWidget *parent)
     connect(ui->pSaveSettingsTB,SIGNAL(clicked()),this,SLOT(saveSettings()));
     connect(ui->pRestoreSettingsTB,SIGNAL(clicked()),this,SLOT(restoreSettings()));
     connect(ui->pResetSettingsTB,SIGNAL(clicked()),this,SLOT(defaultSettings()));
+    connect(ui->pBrightnessDial,SIGNAL(valueChanged(int)),this,SLOT(levelChanged(int)));
+    connect(ui->pContrastDial,SIGNAL(valueChanged(int)),this,SLOT(windowChanged(int)));
 
     ui->pTabWdgt->setCurrentIndex(0);
 
@@ -105,6 +107,10 @@ xfDlg::xfDlg(QWidget *parent)
     ui->pMirrorXTB->hide();
     ui->pMirrorYTB->hide();
     ui->pHideShowControlPointsTB->hide();
+    ui->pContrastCapLab->hide();
+    ui->pBrightnessCapLab->hide();
+    ui->pContrastDial->hide();
+    ui->pBrightnessDial->hide();
 
     ui->pMSGBrowser->verticalScrollBar()->setStyleSheet(
     QString::fromUtf8("QScrollBar:vertical {"

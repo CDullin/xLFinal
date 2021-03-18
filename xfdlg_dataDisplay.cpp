@@ -114,13 +114,52 @@ void xfDlg::hideShowControlButton()
         ui->pMirrorXTB->hide();
         ui->pMirrorYTB->hide();
         ui->pHideShowControlPointsTB->hide();
+        ui->pContrastCapLab->hide();
+        ui->pBrightnessCapLab->hide();
+        ui->pContrastDial->hide();
+        ui->pBrightnessDial->hide();
     }
     else
     {
         ui->pMirrorXTB->show();
         ui->pMirrorYTB->show();
         ui->pHideShowControlPointsTB->show();
+        ui->pContrastCapLab->show();
+        ui->pBrightnessCapLab->show();
+        ui->pContrastDial->show();
+        ui->pBrightnessDial->show();
     }
+}
+
+void xfDlg::levelChanged(int v)
+{
+    _level = (float)v/100.0f;
+    displayFrame(ui->pFrameDial->value());
+}
+
+void xfDlg::windowChanged(int v)
+{
+    _window = (float)v/100.0f;
+    displayFrame(ui->pFrameDial->value());
+}
+
+QPixmap xfDlg::generateDisplayPixmap(QImage img)
+{
+    QImage cpy=img;
+    float val;
+
+    float _center = 65535.0f/2.0f/_level;
+    float _br = 65535.0f/_window;
+    float _min = _center - _br/2.0;
+    float _max = _center + _br/2.0;
+
+    for (long x=0;x<img.width();++x)
+        for (long y=0;y<img.height();++y)
+        {
+            val=((quint16*)img.scanLine(y))[x];
+            ((quint16*)cpy.scanLine(y))[x]=max(0.0f,min(65535.0f,(val-_min)*65535.0f/(_max-_min)));
+        }
+    return QPixmap::fromImage(cpy);
 }
 
 void xfDlg::displayFrame(int frameNr)
@@ -131,7 +170,7 @@ void xfDlg::displayFrame(int frameNr)
         connect(pPixItem,SIGNAL(doubleClicked(QPointF)),this,SLOT(hideShowControlButton()));
         ui->pGV->scene()->addItem(pPixItem);
     }
-    QPixmap pix = QPixmap::fromImage(readTIFFrame(frameNr));
+    QPixmap pix = generateDisplayPixmap(readTIFFrame(frameNr));
     // overlay info painter
     pPixItem->setPixmap(pix);
     float scale = min((float)pix.width()/(float)ui->pGV->width(),(float)pix.height()/float(ui->pGV->height()))*0.9;

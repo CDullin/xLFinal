@@ -47,6 +47,8 @@
         <file>play_button_disabled.png</file>
         <file>rotation_angle_button_disab.png</file>
         <file>small_button_disabled.png</file>
+        <file>brightness_button.png</file>
+        <file>contrast_button.png</file>
     </qresource>
     <qresource prefix="/manual">
         <file>manual.html</file>

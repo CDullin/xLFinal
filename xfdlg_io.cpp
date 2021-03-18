@@ -292,6 +292,7 @@ void xfDlg::import()
     }
     connect(&dlg,SIGNAL(MSG(const QString&,const bool&)),this,SLOT(MSGSlot(const QString&,const bool&)));
     connect(&dlg,SIGNAL(selectedTIFFile(const QString&)),this,SLOT(selectedImportFile(const QString&)));
+    connect(&dlg,SIGNAL(selectedCSVFile(const QString&)),this,SLOT(selectedCSVFile(const QString&)));
     if (dlg.exec()==QDialog::Accepted)
     {
         _lastFileName=_data._fileName;

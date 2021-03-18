@@ -85,6 +85,7 @@ protected:
     bool eventFilter(QObject *, QEvent *) override;
     void updateAndDisplayStatus();
     QImage readTIFFrame(int);
+    QPixmap generateDisplayPixmap(QImage img);
     void saveMultiFrameTIFF();
     void createStandardPathItems();
     void createVisualizationFor2DResults(XLFParam&,const QVector <float>& data, float fps,float& _minValue,float &_maxValue);
@@ -93,6 +94,7 @@ protected slots:
     void updateClock();
     void import();
     void selectedImportFile(const QString&);
+    void selectedCSVFile(const QString&);
     void displayFrame(int);
     void startStopPlayTime(bool);
     void dispNextFrame();
@@ -108,6 +110,8 @@ protected slots:
     void displaySeries(int);
     void hideShowControlButton();
     void dispFrame();
+    void levelChanged(int);
+    void windowChanged(int);
 
     void defaultSettings();
     void saveSettings();
@@ -132,5 +136,7 @@ private:
     QTimer *pPlayTimer = nullptr;
     QChart* pChart = nullptr;
     QString _lastFileName = "";
+    float _level = 1.0f;
+    float _window = 1.0f;
 };
 #endif // XFDLG_H

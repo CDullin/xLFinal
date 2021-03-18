@@ -30,6 +30,7 @@ xfImportDlg::xfImportDlg(QWidget *parent) :
     model->setFilter(QDir::AllDirs|QDir::NoDotAndDotDot);
     ui->pDirTreeWdgt->setModel(model);
     //ui->pDirTreeWdgt->setRootIndex(model->index(QDir::currentPath()));
+    ui->pDirTreeWdgt->setTreePosition(0);
     ui->pDirTreeWdgt->header()->setFont(ui->pDirTreeWdgt->font());
     ui->pDirTreeWdgt->setRootIsDecorated(false);
     ui->pDirTreeWdgt->setColumnHidden(1,true);
@@ -98,9 +99,12 @@ xfImportDlg::~xfImportDlg()
 void xfImportDlg::setCurrentFile(const QString &fname)
 {
     QFileSystemModel *model = dynamic_cast<QFileSystemModel*>(ui->pDirTreeWdgt->model());
+    ui->pDirTreeWdgt->setAutoExpandDelay(0);
+    ui->pDirTreeWdgt->expandAll();
     ui->pDirTreeWdgt->expand(model->index(fname));
     ui->pDirTreeWdgt->setCurrentIndex(model->index(fname));
     ui->pDirTreeWdgt->scrollTo(ui->pDirTreeWdgt->currentIndex(),QAbstractItemView::PositionAtCenter);
+    listTiffFilesInCurrentDir(model->index(fname));
 }
 
 void xfImportDlg::listTiffFilesInCurrentDir(const QModelIndex& index)
@@ -111,7 +115,7 @@ void xfImportDlg::listTiffFilesInCurrentDir(const QModelIndex& index)
     ui->pFileListWdgt->clear();
     QDir d(info.absoluteFilePath());
     d.setFilter(QDir::Files);
-    d.setNameFilters(QStringList() << "*.tiff" << "*.tif" << "*.TIF" << "*.TIFF");
+    d.setNameFilters(QStringList() << "*.tiff" << "*.tif" << "*.TIF" << "*.TIFF" << "*.csv");
 
     QFileInfoList list=d.entryInfoList();
     for (QFileInfoList::iterator it=list.begin();it!=list.end();++it)
@@ -134,7 +138,10 @@ void xfImportDlg::accept()
     {
         QListWidgetItem *pItem = ui->pFileListWdgt->selectedItems().at(0);
         QString fileName = pItem->data(Qt::UserRole).toString();
-        emit selectedTIFFile(fileName);
+
+        QFileInfo info(fileName);
+        if (info.suffix()=="csv") emit selectedCSVFile(fileName);
+        else emit selectedTIFFile(fileName);
     }
 
     QDialog::accept();

@@ -74,6 +74,156 @@ void xfDlg::createVisualizationFor2DResults(XLFParam &_param,const QVector <floa
 
 }
 
+void xfDlg::selectedCSVFile(const QString& fname)
+{
+    QFile f(fname);
+    if (f.open(QFile::ReadOnly))
+    {
+        QTextStream t(&f);
+        QString s;
+
+        QVector <float> _avBoth;
+
+        while (!t.atEnd())
+        {
+            s = t.readLine();
+            // german
+            s = s.replace(",",".");
+            _avBoth.append(s.toFloat());
+        }
+        f.close();
+
+        float _minVal = 10000;
+        float _maxVal = -10000;
+        for (long i=0;i<_avBoth.count();++i)
+        {
+            _minVal = min(_minVal,_avBoth[i]);
+            _maxVal = max(_maxVal,_avBoth[i]);
+        }
+
+        *_data.pTotalTime=(float)(_avBoth.count())/100.0f;
+        float fps = 100.0f;
+        int frame = (*_data.pTrendCorrTimeWindowInMS) / 1000.0f * fps;
+
+        QVector <float> _bBg = adaptiveMovAvFilter(_avBoth,(float)frame/2.0f);
+
+        // corrected and smoothed again
+        QVector <float> _bVal;
+        for (int i=0;i<_avBoth.count();++i)
+        {
+            //_bVal.append(_avBoth.at(i)/_bBg.at(i));
+            _bVal.append(_avBoth.at(i)-_minVal);
+        }
+
+        QVector <int> _bPeaks;
+        float _lvl = (*_data.pLevelInPercent);
+
+        findMaxPositions(_bVal,_bPeaks,0,_avBoth.count()-1,_lvl);
+        _avBoth = _bVal;
+        // calculate starting points list, end point list, peak point list
+        if (_bPeaks.count()>3) _data._both = generateParam(_avBoth,0,_avBoth.count()-1,fps,_lvl,(*_data.pTrendCorrTimeWindowInMS)/1000.0f*fps);
+
+        if (!pResultTxtItem)
+        {
+            pResultTxtItem = new QGraphicsSimpleTextItem();
+            ui->pDataGV->scene()->addItem(pResultTxtItem);
+            QFont f=font();
+            f.setPixelSize(15);
+            pResultTxtItem->setFont(f);
+            pResultTxtItem->setPen(QPen(Qt::black));
+        }
+
+        QString txt;
+        txt+=ui->pFileNameLEdit->text()+"\t";
+        txt+=QString("total time=%1s    ").arg(*_data.pTotalTime);
+        txt+=QString("body mass=%1g\n").arg(*_data.pBodyMass,0,'f',1);
+        txt += "region\t#\tbr[s]\tin[s]\tiso\taniso\n\t\tTflow[au*s]\tAT\ttau[1/s]\thr[bpm]\n";
+
+        // update table
+        XLFParam *pParam=&_data._both;
+        txt += "csv\t";
+        float _heartRate = -1;
+
+        txt+=QString("%1").arg(pParam->_peaks.count())+"  ";
+        txt+=QString("%1 ± %2").arg(pParam->_avL,0,'f',3).arg(pParam->_stdL,0,'g',3)+"  ";
+        txt+=QString("%1 ± %2").arg(pParam->_tin,0,'f',3).arg(pParam->_stdtin,0,'g',3)+"  ";
+        txt+=QString("%1 ± %2").arg(pParam->_Iso,0,'f',3).arg(pParam->_stdIso,0,'g',3)+"  ";
+        txt+=QString("%1 ± %2").arg(pParam->_AnIso,0,'f',3).arg(pParam->_stdAnIso,0,'g',3)+"\n\t";
+        txt+=QString("%1 ± %2").arg(pParam->_TV,0,'f',6).arg(pParam->_stdTV,0,'g',5)+"  ";
+        txt+=QString("%1 ± %2").arg(pParam->_ATrp,0,'f',6).arg(pParam->_stdATrp,0,'g',5)+"  ";
+        pParam->_decayRate!=-1 ? txt+=QString("%1 [%2]").arg(pParam->_decayRate,0,'f',3).arg(pParam->_RSquaredDecayRate,0,'f',3)+"  " :
+                txt += QString("NaN\t");
+        _heartRate!=-1 ? txt+= QString("%1").arg(_heartRate,0,'f',1)+"\n" : txt += "NaN\n";
+
+        pResultTxtItem->setText(txt);
+
+        float minL,maxL,minR,maxR,minB,maxB;
+
+        createVisualizationFor2DResults(_data._both,_avBoth,fps,minB,maxB);
+
+        float _minBackground=minB;
+        float _maxBackground=maxB;
+
+        if (pChart) {
+            ui->pDataGV->scene()->removeItem(pChart);
+            delete pChart;
+        }
+        pChart = new QChart();
+        _data._both.addToChart(pChart);
+
+        QLineSeries *_leftBoundary = new QLineSeries();
+        QLineSeries *_rightBoundary = new QLineSeries();
+        (*_leftBoundary) << QPointF((float)_data._startFrame/fps,_minBackground*0.99) << QPointF((float)_data._startFrame/fps,_maxBackground*1.01);
+        (*_leftBoundary) << QPointF((float)_data._endFrame/fps,_maxBackground*1.01) << QPointF((float)_data._endFrame/fps,_minBackground*0.99);
+        (*_rightBoundary) << QPointF((float)_data._startFrame/fps,_minBackground*0.99) << QPointF((float)_data._startFrame/fps,_minBackground*0.99);
+        (*_rightBoundary) << QPointF((float)_data._endFrame/fps,_minBackground*0.99) << QPointF((float)_data._endFrame/fps,_minBackground*0.99);
+        QAreaSeries *pAreaSeries = new QAreaSeries(_leftBoundary,_rightBoundary);
+        pAreaSeries->setPen(QPen(Qt::gray));
+        pAreaSeries->setBrush(QBrush(QColor(100,100,100,33)));
+        pChart->addSeries(pAreaSeries);
+        pChart->createDefaultAxes();
+
+        //pChart->setAnimationOptions(QChart::SeriesAnimations);
+        pChart->legend()->setEnabled(false);
+        pChart->setPlotArea(pChart->geometry());
+        pChart->createDefaultAxes();
+
+        pChart->axisX()->setTitleText("time [s]");
+        //pChart->axisX()->setRange(0,5.0f);
+        pChart->axisY()->setTitleText("relative x-ray transmission");
+
+        QValueAxis *pYValueAxis = dynamic_cast<QValueAxis*>(pChart->axisY());
+        pYValueAxis->setRange(pYValueAxis->min()*0.9,pYValueAxis->max()*1.1);
+        //if (pOrgCV->chart()) delete pOrgCV->chart();
+        //pOrgCV->setChart(pChart);
+
+        pChart->setBackgroundBrush(QBrush(Qt::NoBrush));
+        pChart->setAnimationOptions(QChart::SeriesAnimations);
+        pChart->legend()->hide();
+        //pChart->legend()->setVisible(false);
+        pChart->setSizePolicy(QSizePolicy(QSizePolicy::MinimumExpanding,QSizePolicy::MinimumExpanding));
+        pChart->setMinimumSize(ui->pDataGV->width()-20,ui->pDataGV->height()-200);
+        ui->pDataGV->scene()->setSceneRect(0,0,ui->pDataGV->width()-20,ui->pDataGV->height()-20);
+        ui->pDataGV->scene()->addItem(pChart);
+        ui->pTabWdgt->setCurrentIndex(1);
+
+        QFont f=font();
+        f.setPixelSize(15);
+        pResultTxtItem->setFont(f);
+        pResultTxtItem->setPos(50,310);
+
+        pChart->setTitle("csv");
+        _data._both.setVisible(true);
+
+        ui->pTabWdgt->setTabEnabled(1,true);
+        ui->pTabWdgt->setCurrentIndex(1);
+
+        _data._dataValid = true;
+        _data._fileName = fname;
+        ui->pVisCB->setEnabled(false);
+    }
+}
+
 void xfDlg::calculate2DXLF()
 {
 
@@ -198,7 +348,7 @@ void xfDlg::calculate2DXLF()
     free(mask);
     TIFFClose(tif);
     if (_abb) return;
-
+/*
     QFile fs("/home/heimdall/trendline_correction.csv");
     fs.open(QFile::WriteOnly);
     QTextStream t(&fs);
@@ -207,7 +357,7 @@ void xfDlg::calculate2DXLF()
         t << QString("%1\n").arg((*it));
 
     fs.close();
-
+*/
     // calculate mov.average
     float fps = (float)_data._frames / (*_data.pTotalTime);
     int frame = (*_data.pTrendCorrTimeWindowInMS) / 1000.0f * fps;
