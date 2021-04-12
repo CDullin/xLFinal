@@ -85,6 +85,10 @@ void xfDlg::exportResults()
 
             if (ui->pTotalAngleTB->isChecked())
             {
+                t << QString("parameter: harmonics=%1 trend correction time window = %2 ms and level = %3 %%\n")
+                               .arg(ui->pHarmonicsLCD->value())
+                               .arg(ui->pTrendCorrTimeWindowLCD->value())
+                               .arg(ui->pLevelLCD->value());
                 QStringList lst=pResultTxtItem->text().split("\n");
                 for (QStringList::iterator it=lst.begin();it!=lst.end();++it)
                 {
@@ -99,6 +103,10 @@ void xfDlg::exportResults()
             {
                 QStringList lst=pResultTxtItem->text().split("\n");
                 QStringList _append;
+                _append.append(QString("parameter: harmonics=%1 trend correction time window = %2 ms and level = %3 %%")
+                               .arg(ui->pHarmonicsLCD->value())
+                               .arg(ui->pTrendCorrTimeWindowLCD->value())
+                               .arg(ui->pLevelLCD->value()));
                 _append.append(lst.at(0));
                 _append.append(QString("region,#,breathing rate {s},std_breathing rate,insp. time {s},"
                                        "std_insp. time,isotrophy index,std_isotrophy index,anisotrophy index,"
@@ -355,13 +363,24 @@ void xfDlg::selectedImportFile(const QString& fname)
         ui->pFrameDial->setValue(0);
     }
 
-    p3DFrameItem = nullptr;
-    pCornerPixmapItem = nullptr;
-
     dispFrame();
     createStandardPathItems();
     updateAndDisplayStatus();
 
-    if (_data._rotation && !ui->pTotalAngleTB->isChecked()) ui->pTotalAngleTB->animateClick();
-    if (!_data._rotation && ui->pTotalAngleTB->isChecked()) ui->pTotalAngleTB->animateClick();
+    if (_data._rotation)
+    {
+        if (!ui->pTotalAngleTB->isChecked()) ui->pTotalAngleTB->animateClick();
+        _leftLobeVis.setVisible(false);
+        _rightLobeVis.setVisible(false);
+        if (p3DFrameItem && pPixItem && !pPixItem->pixmap().isNull())
+            p3DFrameItem->setPos(pPixItem->pixmap().width()/2-50,pPixItem->pixmap().height()/2-30);
+        p3DFrameItem->setVisible(true);
+    }
+    else
+    {
+        if (ui->pTotalAngleTB->isChecked()) ui->pTotalAngleTB->animateClick();
+        _leftLobeVis.setVisible(true);
+        _rightLobeVis.setVisible(true);
+        p3DFrameItem->setVisible(false);
+    }
 }

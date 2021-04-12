@@ -369,6 +369,7 @@ void xfDlg::calculate3DXLF()
     _data._both.pIntervals->setMarkerShape(QScatterSeries::MarkerShapeRectangle);
     _data._both.pIntervals->setMarkerSize(markerSize/2);
 
+    //QPolarChart *pPolChart=new QPolarChart();
     QPolarChart *pPolChart=new QPolarChart();
     pPolChart->addSeries(_data._both.pOrgData);
     pPolChart->addSeries(pAreaSeries);
